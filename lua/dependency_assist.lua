@@ -54,14 +54,31 @@ function M.start_package_search()
 	ui.input_window(' Package name ', search_package)
 end
 
-function M.setup(preferences)
+--- @param preferences table
+function M.setup_ft(preferences)
+	vim.cmd('command! -buffer SearchPackage lua require"dependency_assist".start_package_search()')
+
 	local key = (preferences and preferences.key or nil)
-	vim.cmd('command SearchPackage lua require"dependency_assist".start_package_search()')
-	if key then
-		for _,ft in ipairs(supported_filetypes) do
-			vim.cmd('autocmd! BufEnter **/'..ft.filename..' :nnoremap <buffer><silent> '..key..' :SearchPackage<CR>')
-		end
+	if not key then return end
+
+	local buf_id = vim.api.nvim_get_current_buf()
+	vim.api.nvim_buf_set_keymap(buf_id, 'n', key, ':SearchPackage<CR>',
+		{noremap = true, silent = true }
+	)
+end
+
+function M.setup(preferences)
+	local fts = {}
+	for _,ft in pairs(supported_filetypes) do
+		table.insert(fts, ft.filename)
 	end
+	local all_fts = table.concat(fts, ',')
+
+	function _G.__dep_assist_ft_setup()
+		M.setup_ft(preferences)
+	end
+
+	vim.cmd('autocmd! BufEnter '..all_fts..' lua _G.__dep_assist_ft_setup()')
 end
 
 M.close_current_window = ui.close
