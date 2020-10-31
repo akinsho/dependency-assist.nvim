@@ -1,16 +1,14 @@
 # Dependency-assist.nvim
 
+Inspired by [pubspec assist](https://github.com/jeroen-meijer/pubspec-assist) a vscode dart plugin for getting version information for packages.
+Dependency assist is a neovim plugin written in lua, which provides similar functionality.
+
+<img src="./.github/dependency_assist.gif" alt="Dependency assist in action" height="400px">
+
 ## ⚠ NOTE
 
 This plugin is a WIP please use it at your own risk, but be warned
-I haven't finished building it yet
-
-<div style="text-align:center">
-	<img src="./.github/dependency_assist.gif" alt="Dependency assist in action" height="400px">
-</div>
-
-Inspired by [pubspec assist](https://github.com/jeroen-meijer/pubspec-assist) a vscode dart plugin for getting version information for packages
-dependency assist is a neovim plugin written in lua, which provides similar functionality.
+I haven't finished building it yet.
 
 ## TODO
 
