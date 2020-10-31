@@ -95,7 +95,7 @@ function M.input_window(title, callback_name, cb)
 	local buf = api.nvim_create_buf(false, true)
 	local win = api.nvim_open_win(buf, true, opts)
 
-	vim.cmd('autocmd BufWipeout,BufDelete <buffer> execute "bw '..parent_buf..'"')
+	vim.cmd('autocmd BufWipeout,BufDelete <buffer> execute "bw '..parent_buf..'" | stopinsert')
 	set_mappings(buf, vim.list_extend({
 		{
 			mode = "i",
@@ -161,6 +161,15 @@ local function format_packages(packages)
 	return strings
 end
 
+local function format_package_details(data)
+	local result = {}
+	for i = #data.versions, 1, -1 do
+		local pkg = data.versions[i]
+		table.insert(result, pkg.pubspec.name ..": " .. pkg.version)
+	end
+	return result
+end
+
 --- @param cb_name string
 function M.input_package(cb_name)
 	M.input_window('Package name', cb_name)
@@ -170,6 +179,11 @@ function M.list_packages(content)
 	local next_url = content.next_url
 	local packages = format_packages(content.packages)
 	M.list_window(vim.list_extend(packages, {next_url}), 'insert_package')
+end
+
+function M.list_versions(data, callback_name)
+	local versions = format_package_details(data)
+	M.list_window(versions, callback_name)
 end
 
 return M

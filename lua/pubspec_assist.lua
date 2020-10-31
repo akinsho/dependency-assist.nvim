@@ -13,20 +13,11 @@ function M.start_package_search()
 	ui.input_package('search_package')
 end
 
-local function format_package_details(data)
-	local result = {}
-	for _,pkg in ipairs(data.versions) do
-		table.insert(result, pkg.pubspec.name ..": " .. pkg.version)
-	end
-	return result
-end
-
 function M.get_package()
 	local package = vim.fn.trim(vim.fn.getline('.'))
 	if package then
 		pubspec_api.get_package(package, function (data)
-			local versions = format_package_details(data)
-			ui.list_window(versions, 'insert_package')
+			ui.list_versions(data, 'insert_package')
 		end)
 	end
 end
