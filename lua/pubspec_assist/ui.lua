@@ -37,20 +37,15 @@ local function get_max_width(lines, max_width)
 end
 
 function M.close()
-	if M.current_buf then
+	if M.current_buf and M.is_open then
 		vim.cmd('bw '..M.current_buf)
 		M.current_buf = nil
+		M.is_open = false
 	end
 end
 
 local function set_current_buf(buf)
 	M.current_buf = buf
-end
-
-local function reset_win()
-	if M.is_open then
-		M.close()
-	end
 	M.is_open = true
 end
 
@@ -58,7 +53,7 @@ end
 --- @param callback_name string
 --- @param cb function
 function M.input_window(title, callback_name, cb)
-	reset_win()
+	M.close()
 	local parent_buf = api.nvim_create_buf(false, true)
 	local max_width = 30
 
@@ -81,7 +76,7 @@ function M.input_window(title, callback_name, cb)
 		width = max_width,
 		height = height,
 		col = 1,
-		row = 0,
+		row = 1,
 		style = 'minimal',
 		focusable = true
 	}
@@ -113,7 +108,7 @@ end
 --- @param callback_name string
 --- @param cb function
 function M.list_window(content, callback_name, cb)
-	reset_win()
+	M.close()
 	local buf = api.nvim_create_buf(false, true)
 	api.nvim_buf_set_lines(buf, 0, -1, false, content)
 
@@ -125,7 +120,7 @@ function M.list_window(content, callback_name, cb)
 		width = width,
 		height = height,
 		col = 1,
-		row = 0,
+		row = 1,
 		style = 'minimal',
 		focusable = true
 	}
@@ -172,7 +167,7 @@ end
 
 --- @param cb_name string
 function M.input_package(cb_name)
-	M.input_window('Package name', cb_name)
+	M.input_window(' Package name ', cb_name)
 end
 
 function M.list_packages(content)
