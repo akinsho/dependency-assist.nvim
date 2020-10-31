@@ -4,9 +4,20 @@ local M = {
 	current_buf = nil,
 }
 
+function M.get_current_input()
+	local input = vim.fn.trim(vim.fn.getline('.'))
+	M.close()
+	return input
+end
+
 local function set_mappings(buf_id, maps)
 	for _, map in ipairs(maps) do
-		api.nvim_buf_set_keymap(buf_id, map.mode, map.lhs, map.rhs, {
+		api.nvim_buf_set_keymap(
+			buf_id,
+			map.mode,
+			map.lhs,
+			map.rhs,
+			{
 				nowait = true,
 				silent = true,
 				noremap = true,
@@ -18,12 +29,12 @@ local default_mappings = {
 		{
 			mode = 'n',
 			lhs  = '<Esc>',
-			rhs = ':lua require"pubspec_assist".close_current_window()<cr>'
+			rhs = ':lua require"dependency_assist".close_current_window()<cr>'
 		},
 		{
 			mode = 'i',
 			lhs  = '<Esc>',
-			rhs = '<c-o>:lua require"pubspec_assist".close_current_window()<cr>'
+			rhs = '<c-o>:lua require"dependency_assist".close_current_window()<cr>'
 		}
 	}
 
@@ -95,7 +106,7 @@ function M.input_window(title, callback_name, cb)
 		{
 			mode = "i",
 			lhs = "<CR>",
-			rhs = "<c-o>:lua require'pubspec_assist'."..callback_name.."()<CR>"
+			rhs = "<c-o>:lua require'dependency_assist'."..callback_name.."()<CR>"
 		}
 	}, default_mappings))
 	vim.cmd('startinsert!')
@@ -104,13 +115,23 @@ function M.input_window(title, callback_name, cb)
 	if cb then cb(win, buf) end
 end
 
+local function pad(line)
+	return " " ..line .. " "
+end
+
 --- @param content table
 --- @param callback_name string
 --- @param cb function
 function M.list_window(content, callback_name, cb)
 	M.close()
+
+	local formatted = {}
+	for _, item in ipairs(content) do
+		table.insert(formatted, pad(item))
+	end
+
 	local buf = api.nvim_create_buf(false, true)
-	api.nvim_buf_set_lines(buf, 0, -1, false, content)
+	api.nvim_buf_set_lines(buf, 0, -1, false, formatted)
 
 	local max_width = get_max_width(content, 50)
 	local width = max_width + 2
@@ -133,7 +154,7 @@ function M.list_window(content, callback_name, cb)
 	set_mappings(buf, vim.list_extend({
 				{ mode = 'n',
 					lhs = '<CR>',
-					rhs = ':lua require"pubspec_assist".'..callback_name..'()<CR>',
+					rhs = ':lua require"dependency_assist".'..callback_name..'()<CR>',
 				},
 			}, default_mappings)
 		)
@@ -141,44 +162,6 @@ function M.list_window(content, callback_name, cb)
 	set_current_buf(buf)
 
 	if cb then cb(win, buf) end
-end
-
-local function pad(line)
-	return " " ..line .. " "
-end
-
-local function format_packages(packages)
-	local strings = {}
-	for _,package in ipairs(packages) do
-		local str = package.name .. ', version: ' .. package.latest.version
-		table.insert(strings, pad(str))
-	end
-	return strings
-end
-
-local function format_package_details(data)
-	local result = {}
-	for i = #data.versions, 1, -1 do
-		local pkg = data.versions[i]
-		table.insert(result, pkg.pubspec.name ..": " .. pkg.version)
-	end
-	return result
-end
-
---- @param cb_name string
-function M.input_package(cb_name)
-	M.input_window(' Package name ', cb_name)
-end
-
-function M.list_packages(content)
-	local next_url = content.next_url
-	local packages = format_packages(content.packages)
-	M.list_window(vim.list_extend(packages, {next_url}), 'insert_package')
-end
-
-function M.list_versions(data, callback_name)
-	local versions = format_package_details(data)
-	M.list_window(versions, callback_name)
 end
 
 return M
