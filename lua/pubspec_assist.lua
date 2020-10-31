@@ -37,9 +37,14 @@ function M.search_package()
 	end
 end
 
+local function get_package_string(pkg)
+	return pkg
+end
+
 function M.insert_package()
 	local package = vim.fn.getline('.')
-	print(package)
+	ui.close()
+	vim.fn.append(vim.fn.line('.'), get_package_string(package))
 end
 
 function M.setup()
