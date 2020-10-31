@@ -61,9 +61,9 @@ local function set_current_buf(buf)
 end
 
 --- @param title string
---- @param callback_name string
---- @param cb function
-function M.input_window(title, callback_name, cb)
+--- @param on_select function
+--- @param on_open function
+function M.input_window(title, on_select, on_open)
 	M.close()
 	local parent_buf = api.nvim_create_buf(false, true)
 	local max_width = 30
@@ -102,17 +102,24 @@ function M.input_window(title, callback_name, cb)
 	local win = api.nvim_open_win(buf, true, opts)
 
 	vim.cmd('autocmd BufWipeout,BufDelete <buffer> execute "bw '..parent_buf..'" | stopinsert')
+
+	-- TODO once native lua callbacks are allowed in mappings
+	-- remove this global function
+	function _G.__dep_assist_input_cb()
+		on_select()
+	end
+
 	set_mappings(buf, vim.list_extend({
 		{
 			mode = "i",
 			lhs = "<CR>",
-			rhs = "<c-o>:lua require'dependency_assist'."..callback_name.."()<CR>"
+			rhs = "<c-o>:lua __dep_assist_input_cb()<CR>"
 		}
 	}, default_mappings))
 	vim.cmd('startinsert!')
 
 	set_current_buf(buf)
-	if cb then cb(win, buf) end
+	if on_open then on_open(win, buf) end
 end
 
 local function pad(line)
@@ -120,9 +127,9 @@ local function pad(line)
 end
 
 --- @param content table
---- @param callback_name string
---- @param cb function
-function M.list_window(content, callback_name, cb)
+--- @param on_select function
+--- @param on_open function
+function M.list_window(content, on_select, on_open)
 	M.close()
 
 	local formatted = {}
@@ -151,17 +158,23 @@ function M.list_window(content, callback_name, cb)
 	vim.wo[win].cursorline = true
 	vim.cmd('set winhighlight=CursorLine:TabLineSel')
 
+	-- TODO once native lua callbacks are allowed in mappings
+	-- remove this global function
+	function _G.__dep_assist_list_cb()
+		on_select()
+	end
+
 	set_mappings(buf, vim.list_extend({
 				{ mode = 'n',
 					lhs = '<CR>',
-					rhs = ':lua require"dependency_assist".'..callback_name..'()<CR>',
+					rhs = ':lua __dep_assist_list_cb()<CR>',
 				},
 			}, default_mappings)
 		)
 
 	set_current_buf(buf)
 
-	if cb then cb(win, buf) end
+	if on_open then on_open(win, buf) end
 end
 
 return M
