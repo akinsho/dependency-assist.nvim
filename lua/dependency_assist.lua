@@ -1,5 +1,5 @@
 local ui = require 'dependency_assist/ui'
-local supported_filetypes = require 'dependency_assist/supported_fts'
+local supported_filetypes = require 'dependency_assist/'
 local helpers = require 'dependency_assist/helpers'
 
 local M = {}
