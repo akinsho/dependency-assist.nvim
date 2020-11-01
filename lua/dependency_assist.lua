@@ -93,19 +93,31 @@ local function check_is_setup(buf_id)
   return success and value or false
 end
 
+function M.show_versions(buf_id)
+  local assistant = get_assistant(buf_id)
+  assistant.show_versions(buf_id,
+    function(lnum, version)
+      ui.set_virtual_text(buf_id, lnum, version, 'DiffAdd')
+    end)
+end
+
 --- @param buf_id number
 --- @param preferences table
---- @param assistant table
-local function setup_dependency_file(buf_id, preferences, assistant)
+local function setup_dependency_file(buf_id, preferences)
   if preferences and preferences.key then
     vim.api.nvim_buf_set_keymap(buf_id, 'n', preferences.key,
       ':SearchPackage<CR>', { noremap = true, silent = true, })
   end
 
-  assistant.show_versions(buf_id,
-    function(lnum, version)
-      ui.set_virtual_text(buf_id, lnum, version, 'DiffAdd')
-    end)
+  M.show_versions(buf_id)
+
+  function _G.__dep_assistant_update_versions()
+    M.show_versions(buf_id)
+  end
+
+  -- TODO cache the versions so this isn't triggered too often
+  -- once caching success fully consider using TextChanged
+  vim.cmd('autocmd! BufWritePost <buffer> lua _G.__dep_assistant_update_versions()')
 end
 
 --- @param preferences table
@@ -118,7 +130,7 @@ local function setup_ft(preferences)
   vim.cmd'command! -buffer SearchPackage lua require"dependency_assist".dependency_search()'
 
   if helpers.is_dependency_file(buf_id, assistant.filename) then
-    setup_dependency_file(buf_id, preferences, assistant)
+    setup_dependency_file(buf_id, preferences)
   end
   vim.api.nvim_buf_set_var(buf_id, 'dependency_assistant_setup', true)
 end

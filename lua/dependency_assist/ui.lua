@@ -92,7 +92,7 @@ function M.input_window(title, options)
   local bottom_line = string.rep("─", content_width)
 
   local top = "╭" .. padded_title .. "╮"
-  local mid = "│" ..    padding   .. "│"
+  local mid = "│" ..   padding    .. "│"
   local bot = "╰" .. bottom_line  .. "╯"
   local lines = { top, mid, bot }
 
