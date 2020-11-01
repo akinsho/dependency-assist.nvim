@@ -61,9 +61,8 @@ local function set_current_buf(buf)
 end
 
 --- @param title string
---- @param on_select function
---- @param on_open function
-function M.input_window(title, on_select, on_open)
+--- @param options table
+function M.input_window(title, options)
   M.close()
   local parent_buf = api.nvim_create_buf(false, true)
   local max_width = 30
@@ -108,7 +107,7 @@ function M.input_window(title, on_select, on_open)
   -- TODO once native lua callbacks are allowed in mappings
   -- remove this global function
   function _G.__dep_assist_input_cb()
-    on_select()
+    options.on_select()
   end
 
   set_mappings(buf, vim.list_extend({
@@ -121,7 +120,7 @@ function M.input_window(title, on_select, on_open)
   vim.cmd('startinsert!')
 
   set_current_buf(buf)
-  if on_open then on_open(win, buf) end
+  if options.on_open then options.on_open(win, buf) end
 end
 
 local function pad(line)
@@ -129,9 +128,8 @@ local function pad(line)
 end
 
 --- @param content table
---- @param on_select function
---- @param on_open function
-function M.list_window(content, on_select, on_open)
+--- @param options table
+function M.list_window(content, options)
   M.close()
 
   local formatted = {}
@@ -163,7 +161,7 @@ function M.list_window(content, on_select, on_open)
   -- TODO once native lua callbacks are allowed in mappings
   -- remove this global function
   function _G.__dep_assist_list_cb()
-    on_select()
+    options.on_select()
   end
 
   set_mappings(buf, vim.list_extend({
@@ -176,7 +174,7 @@ function M.list_window(content, on_select, on_open)
 
   set_current_buf(buf)
 
-  if on_open then on_open(win, buf) end
+  if options.on_open then options.on_open(win, buf) end
 end
 
 --- @param buf_id number

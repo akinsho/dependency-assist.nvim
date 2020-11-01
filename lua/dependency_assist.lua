@@ -35,7 +35,7 @@ local function get_package(assist)
   if pkg then
     assist.api.get_package(pkg, function (data)
       local versions = assist.formatter.format_package_details(data)
-      ui.list_window(versions, insert_package)
+      ui.list_window(versions, { on_select = insert_package })
     end)
   end
 end
@@ -50,9 +50,11 @@ local function search_package(assist)
         for _, pkg in pairs(data.packages) do
           table.insert(result, pkg.package)
         end
-        ui.list_window(result, function()
-          get_package(assist)
-        end)
+        ui.list_window(result, {
+            on_select = function()
+              get_package(assist)
+            end
+          })
       end
     end)
   end
@@ -63,9 +65,11 @@ end
 function M.start_package_search()
   local buf = vim.api.nvim_get_current_buf()
   local assist = get_assist(buf)
-  ui.input_window(' Package name ', function()
-    search_package(assist)
-  end)
+  ui.input_window(' Package name ', {
+    on_select = function()
+      search_package(assist)
+    end
+  })
 end
 
 --- @param preferences table
