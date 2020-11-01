@@ -14,8 +14,8 @@ end
 local function get_assist(buf)
   local ft = vim.bo[buf].filetype
   local assist = supported_filetypes[ft]
-  -- we can't get the correct tool based on filetype
-  -- check if the filename for the filetype matches
+  -- if we can't get the correct tool based on filetype
+  -- check if the dependency file name for the filetype matches
   -- our current file
   if not assist then
     local fname = vim.fn.expand('#'..buf..':t')
