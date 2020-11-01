@@ -91,7 +91,8 @@ function M.input_window(title, on_select, on_open)
     style = 'minimal',
     focusable = true
   }
-  api.nvim_open_win(parent_buf, false, opts)
+  local parent_win = api.nvim_open_win(parent_buf, false, opts)
+  api.nvim_win_set_option(parent_win, 'winhl', 'Normal:Normal')
 
   opts.height = 1
   opts.width = max_width - 2
@@ -100,6 +101,7 @@ function M.input_window(title, on_select, on_open)
 
   local buf = api.nvim_create_buf(false, true)
   local win = api.nvim_open_win(buf, true, opts)
+  api.nvim_win_set_option(win, 'winhl', 'Normal:Normal')
 
   vim.cmd('autocmd BufWipeout,BufDelete <buffer> execute "bw '..parent_buf..'" | stopinsert')
 
