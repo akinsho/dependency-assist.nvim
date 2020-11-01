@@ -1,35 +1,7 @@
-local pubspec_api = require 'dependency_assist/pubspec_api'
-local formatters = require 'dependency_assist/formatters'
 local ui = require 'dependency_assist/ui'
-local yaml = require 'dependency_assist/yaml'
+local supported_filetypes = require 'dependency_assist/supported_fts'
 
 local M = {}
-
---- @param buf_id number
-local function show_dart_versions(buf_id)
-	local lines = vim.api.nvim_buf_get_lines(buf_id, 0, -1, false)
-	if #lines > 0 then
-		-- TODO empty lines are being omitted this breaks
-		-- parsing for dependencies
-		local buffer_text = table.concat(lines, '\n')
-		local parsed_lines = yaml.eval(buffer_text)
-
-		local deps = parsed_lines.dependencies
-		if deps and not vim.tbl_isempty(deps) then
-			pubspec_api.check_outdated_packages(deps, function (latest)
-				local lnum
-				for idx, line in ipairs(lines) do
-					if line:match(latest.name..':') then lnum = idx - 1 end
-				end
-				if lnum then ui.set_virtual_text(buf_id, lnum, latest.version) end
-			end)
-		end
-	end
-end
-
-local supported_filetypes = {
-	dart = {filename = 'pubspec.yaml', show_versions = show_dart_versions}
-}
 
 --- @param text string
 local function insert_at_cursor_pos(text)
@@ -42,26 +14,56 @@ local function insert_package()
 	insert_at_cursor_pos(pkg)
 end
 
-local function get_package()
+--- @param buf integer
+local function get_assist(buf)
+	local ft = vim.bo[buf].filetype
+	local assist = supported_filetypes[ft]
+	-- we can't get the correct tool based on filetype
+	-- check if the filename for the filetype matches
+	-- our current file
+	if not assist then
+		local fname = vim.fn.expand('#'..buf..':t')
+		for filetype, opts in pairs(supported_filetypes) do
+			if fname == opts.filename then
+				assist = supported_filetypes[filetype]
+			end
+		end
+	end
+	if assist then return assist end
+
+	local cmd = 'Dependency assist does not support '..ft
+	if ft == '' then
+		cmd = "Dependency couldn't get the correct filetype"
+	end
+	vim.cmd(string.format('echoerr "%s"', cmd))
+end
+
+--- @param buf integer
+local function get_package(buf)
+	local assist = get_assist(buf)
 	local pkg = vim.fn.trim(vim.fn.getline('.'))
 	if pkg then
-		pubspec_api.get_package(pkg, function (data)
-			local versions = formatters.dart.format_package_details(data)
+		assist.api.get_package(pkg, function (data)
+			local versions = assist.formatter.format_package_details(data)
 			ui.list_window(versions, insert_package)
 		end)
 	end
 end
 
-local function search_package()
+--- @param buf integer
+local function search_package(buf)
+	local assist = get_assist(buf)
 	local input = ui.get_current_input()
 	if input:len() > 0 then
-		pubspec_api.search_package(input, function (data)
+		assist.api.search_package(input, function (data)
 			local result = {}
 			if data then
 				for _, pkg in pairs(data.packages) do
 					table.insert(result, pkg.package)
 				end
-				ui.list_window(result, get_package)
+				ui.list_window(result, function()
+					get_package(buf)
+				end)
 			end
 		end)
 	end
@@ -70,7 +72,10 @@ end
 --- 1. start package search by opening an input buffer, which registers
 --- a callback once the a selection is made triggering a searck
 function M.start_package_search()
-	ui.input_window(' Package name ', search_package)
+	local buf = vim.api.nvim_get_current_buf()
+	ui.input_window(' Package name ', function()
+		search_package(buf)
+	end)
 end
 
 --- @param preferences table
@@ -82,15 +87,17 @@ function M.setup_ft(preferences)
 
 	local buf_id = vim.api.nvim_get_current_buf()
 	vim.api.nvim_buf_set_keymap(buf_id, 'n', key, ':SearchPackage<CR>',
-		{noremap = true, silent = true }
-		)
+		{
+			noremap = true,
+			silent = true,
+		})
 
-	local fname = vim.fn.expand('%:t')
-	for filetype, opts in pairs(supported_filetypes) do
-			if fname == opts.filename then
-				return supported_filetypes[filetype].show_versions(buf_id)
-			end
-	end
+	local assist = get_assist(buf_id)
+	return assist.show_versions(
+		buf_id,
+		function(lnum, version)
+			ui.set_virtual_text(buf_id, lnum, version)
+		end)
 end
 
 --- @param preferences table
