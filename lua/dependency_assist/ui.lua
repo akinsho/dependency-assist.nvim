@@ -4,6 +4,18 @@ local M = {
   current_buf = nil,
 }
 
+--- @param parent_buf number
+local function cleanup_autocommands(parent_buf)
+
+  vim.cmd('autocmd BufWipeout,BufDelete <buffer> execute "bw '..parent_buf..'" | stopinsert')
+  -- vim.cmd'autocmd! WinLeave <buffer> lua require"dependency_assist".close_current_window()'
+end
+
+local function pad(line)
+  return " " ..line .. " "
+end
+
+
 function M.get_current_input()
   local input = vim.fn.trim(vim.fn.getline('.'))
   M.close()
@@ -78,15 +90,14 @@ local function set_current_buf(buf)
   M.is_open = true
 end
 
---- @param title string
---- @param options table
-function M.input_window(title, options)
+local function bordered_window(win_opts, options, callback)
   M.close()
   local parent_buf = api.nvim_create_buf(false, true)
-  local max_width = 40
+  local max_width = win_opts.width
+  M.parent_buf = parent_buf
 
-  local remainder = max_width - string.len(title)
-  local padded_title = title .. string.rep("─", remainder - 2)
+  local remainder = max_width - string.len(win_opts.title)
+  local padded_title = win_opts.title .. string.rep("─", remainder - 2)
   local padding = string.rep(" ", max_width - 2)
   local content_width = string.len(padding)
   local bottom_line = string.rep("─", content_width)
@@ -100,85 +111,103 @@ function M.input_window(title, options)
 
   local height = #lines
   local config = get_window_config(max_width, height, options.center)
-
-  config.focusable = false
-  api.nvim_open_win(parent_buf, false, config)
-
-  config.height = 1
-  config.width = max_width - 2
-  config.col = config.col + 1
-  config.row = config.row + 1
-  config.focusable = true
-
-  local buf = api.nvim_create_buf(false, true)
-  local win = api.nvim_open_win(buf, true, config)
-
-  vim.cmd('autocmd BufWipeout,BufDelete <buffer> execute "bw '..parent_buf..'" | stopinsert')
-
-  -- TODO once native lua callbacks are allowed in mappings
-  -- remove this global function
-  function _G.__dep_assist_input_cb()
-    options.on_select(options.buf_id)
-  end
-
-  set_mappings(buf, vim.list_extend({
-    {
-      mode = "i",
-      lhs = "<CR>",
-      rhs = "<c-o>:lua __dep_assist_input_cb()<CR>"
-    }
-  }, default_mappings))
-  vim.cmd('startinsert!')
-
-  set_current_buf(buf)
-  if options.on_open then options.on_open(win, buf) end
+  local win = api.nvim_open_win(parent_buf, false, config)
+  callback(win, parent_buf, config)
 end
 
-local function pad(line)
-  return " " ..line .. " "
+--- @param title string
+--- @param options table
+function M.input_window(title, options)
+  bordered_window({ title = title, width = 40},
+    options,
+    function(_, parent_buf, config)
+      config.height = 1
+      config.width = config.width - 2
+      config.col = config.col + 1
+      config.row = config.row + 1
+      config.focusable = false
+
+      local buf = api.nvim_create_buf(false, true)
+      local win = api.nvim_open_win(buf, true, config)
+
+      -- TODO once native lua callbacks are allowed in mappings
+      -- remove this global function
+      function _G.__dep_assist_input_cb()
+        options.on_select(options.buf_id)
+      end
+
+      set_mappings(buf, vim.list_extend({
+            {
+              mode = "i",
+              lhs = "<CR>",
+              rhs = "<c-o>:lua __dep_assist_input_cb()<CR>"
+            }
+        }, default_mappings))
+      vim.cmd('startinsert!')
+      cleanup_autocommands(parent_buf)
+
+      set_current_buf(buf)
+      if options.on_open then options.on_open(win, buf) end
+    end)
 end
 
 --- @param content table
 --- @param options table
 function M.list_window(content, options)
-  M.close()
-
-  local formatted = {}
-  for _, item in ipairs(content) do
-    table.insert(formatted, pad(item))
-  end
-
-  local buf = api.nvim_create_buf(false, true)
-  api.nvim_buf_set_lines(buf, 0, -1, false, formatted)
-
   local max_width = get_max_width(content, 50)
-  local width = max_width + 2
-  local height = math.min(#content, vim.fn.float2nr(vim.o.lines * 0.5) - 3)
-  local opts = get_window_config(width, height, options.center)
-  local win = api.nvim_open_win(buf, true, opts)
-  api.nvim_buf_set_option(buf, 'modifiable', false)
+  bordered_window({title = 'Search query...', width = max_width},
+    options,
+    function(parent_win, parent_buf, config)
+      local formatted = {}
+      for _, item in ipairs(content) do
+        table.insert(formatted, pad(item))
+      end
 
-  vim.wo[win].cursorline = true
-  api.nvim_win_set_option(win, 'winhl', 'CursorLine:TabLineSel')
+      local buf = api.nvim_create_buf(false, true)
+      api.nvim_buf_set_lines(buf, 0, -1, false, formatted)
 
-  -- TODO once native lua callbacks are allowed in mappings
-  -- remove this global function
-  function _G.__dep_assist_list_cb()
-    options.on_select(options.buf_id)
+      local width = max_width + 2
+      local height = math.min(#content, vim.fn.float2nr(vim.o.lines * 0.5) - 3)
+
+      local opts = config
+      local parent_opts = config
+      if M.parent_buf then
+        parent_opts.row = config.row
+        parent_opts.width = width
+        parent_opts.height =  config.height + height
+        api.nvim_win_set_config(parent_win, parent_opts)
+      end
+      -- TODO this should be able to be set to config.height but that value
+      -- is unusually large
+      opts.row = config.row + 3
+      opts.width = width
+      opts.height = height
+
+      local win = api.nvim_open_win(buf, true, opts)
+      api.nvim_buf_set_option(buf, 'modifiable', false)
+
+      vim.wo[win].cursorline = true
+      api.nvim_win_set_option(win, 'winhl', 'CursorLine:TabLineSel')
+      cleanup_autocommands(parent_buf)
+
+      -- TODO once native lua callbacks are allowed in mappings
+      -- remove this global function
+      function _G.__dep_assist_list_cb()
+        options.on_select(options.buf_id)
+      end
+
+      set_mappings(buf, vim.list_extend({
+            { mode = 'n',
+              lhs = '<CR>',
+              rhs = ':lua __dep_assist_list_cb()<CR>',
+            },
+          }, default_mappings)
+        )
+      set_current_buf(buf)
+
+      if options.on_open then options.on_open(win, buf) end
+    end)
   end
-
-  set_mappings(buf, vim.list_extend({
-        { mode = 'n',
-          lhs = '<CR>',
-          rhs = ':lua __dep_assist_list_cb()<CR>',
-        },
-      }, default_mappings)
-    )
-
-  set_current_buf(buf)
-
-  if options.on_open then options.on_open(win, buf) end
-end
 
 --- @param buf_id number
 --- @param lnum number
