@@ -36,6 +36,7 @@ local dart = {
   filename = 'pubspec.yaml',
   formatter = formatter,
   show_versions = show_dart_versions,
+  extension = 'dart'
 }
 
 return dart

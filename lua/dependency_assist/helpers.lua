@@ -17,4 +17,11 @@ function M.echoerr(error)
   vim.cmd(string.format('echoerr "%s"', error))
 end
 
+--- @param buf_id integer
+--- @param filename string
+function M.is_dependency_file(buf_id, filename)
+  local fname = vim.fn.expand('#'..buf_id..':t')
+  return fname == filename
+end
+
 return M
