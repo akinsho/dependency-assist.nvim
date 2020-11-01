@@ -83,7 +83,7 @@ end
 function M.input_window(title, options)
   M.close()
   local parent_buf = api.nvim_create_buf(false, true)
-  local max_width = 30
+  local max_width = 40
 
   local remainder = max_width - string.len(title)
   local padded_title = title .. string.rep("─", remainder - 2)
