@@ -85,8 +85,8 @@ end
 --- @param height integer
 local function get_window_config(width, height)
   local win_width = vim.fn.winwidth(0)
-  local row = (vim.o.lines - 3 - height) / 2
-  local col = (win_width - width) / 2
+  local row = math.floor((vim.o.lines * 0.8 - 3 - height) / 2)
+  local col = math.floor((win_width - width) / 2)
   local opts = {
     relative = 'win',
     width = width,
