@@ -84,12 +84,15 @@ end
 --- @param width integer
 --- @param height integer
 local function get_window_config(width, height)
+  local win_width = vim.fn.winwidth(0)
+  local row = (vim.o.lines - 3 - height) / 2
+  local col = (win_width - width) / 2
   local opts = {
-    relative = 'cursor',
+    relative = 'win',
     width = width,
     height = height,
-    col = 1,
-    row = 1,
+    col = col,
+    row = row,
     style = 'minimal',
     focusable = true
   }
