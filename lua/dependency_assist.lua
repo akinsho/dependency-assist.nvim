@@ -31,16 +31,17 @@ local function get_assist(buf)
 	end
 	if assist then return assist end
 
-	local cmd = 'Dependency assist does not support '..ft
+	local cmd
 	if ft == '' then
 		cmd = "Dependency couldn't get the correct filetype"
+	else
+		cmd = 'Dependency assist does not support '..ft
 	end
 	vim.cmd(string.format('echoerr "%s"', cmd))
 end
 
---- @param buf integer
-local function get_package(buf)
-	local assist = get_assist(buf)
+--- @param assist table
+local function get_package(assist)
 	local pkg = vim.fn.trim(vim.fn.getline('.'))
 	if pkg then
 		assist.api.get_package(pkg, function (data)
@@ -50,9 +51,8 @@ local function get_package(buf)
 	end
 end
 
---- @param buf integer
-local function search_package(buf)
-	local assist = get_assist(buf)
+--- @param assist table
+local function search_package(assist)
 	local input = ui.get_current_input()
 	if input:len() > 0 then
 		assist.api.search_package(input, function (data)
@@ -62,7 +62,7 @@ local function search_package(buf)
 					table.insert(result, pkg.package)
 				end
 				ui.list_window(result, function()
-					get_package(buf)
+					get_package(assist)
 				end)
 			end
 		end)
@@ -73,8 +73,9 @@ end
 --- a callback once the a selection is made triggering a searck
 function M.start_package_search()
 	local buf = vim.api.nvim_get_current_buf()
+	local assist = get_assist(buf)
 	ui.input_window(' Package name ', function()
-		search_package(buf)
+		search_package(assist)
 	end)
 end
 
