@@ -101,6 +101,20 @@ local function set_current_buf(buf)
   M.is_open = true
 end
 
+--- @param buf number
+--- @param title string
+local function highlight_title(buf, title)
+  local start_col = 4
+  api.nvim_buf_add_highlight(
+    buf,
+    -1, -- namespace ID (unnecessary)
+    'Title', -- Higlight group
+    0, -- line number
+    start_col, -- start
+    start_col + title:len() -- end
+    )
+end
+
 local function bordered_window(win_opts, callback)
   M.close()
   local parent_buf = api.nvim_create_buf(false, true)
@@ -124,6 +138,7 @@ local function bordered_window(win_opts, callback)
   table.insert(lines, bot)
 
   api.nvim_buf_set_lines(parent_buf, 0, -1, false, lines)
+  highlight_title(parent_buf, win_opts.title)
 
   local height = #lines
   local config = get_window_config(max_width, height)
