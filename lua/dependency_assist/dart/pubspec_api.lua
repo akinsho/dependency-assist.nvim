@@ -42,8 +42,18 @@ end
 function M.check_outdated_packages(deps, cb)
   for name,version in pairs(deps) do
     M.get_package(name, function (data)
-      local latest = data.latest.version
-      if latest ~= version then cb({name = name, version = latest}) end
+      if data and data.latest then
+        local latest = data.latest.version
+        if latest ~= version then
+          cb({
+              name = name,
+              latest = latest,
+              previous = version,
+            })
+        end
+      else
+        -- TODO inform of error
+      end
     end)
   end
 end

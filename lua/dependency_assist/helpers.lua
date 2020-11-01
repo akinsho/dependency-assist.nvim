@@ -99,4 +99,10 @@ function M.create_augroups(definitions)
   end
 end
 
+--- escape any special non alphanumeric characters in a string
+--- @param text string
+function M.escape_pattern(text)
+  return text:gsub("([^%w])", "%%%1")
+end
+
 return M

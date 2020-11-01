@@ -5,6 +5,36 @@ local helpers = require 'dependency_assist/helpers'
 
 local extension = 'dart'
 local dependency_file = 'pubspec.yaml'
+local dev_block = 'devDependencies:'
+local dependency_block = 'dependencies:'
+
+--- @param pkg table
+--- @param line string
+local function is_matching_pkg(pkg, line)
+  if type(pkg.previous) ~= 'string' then return false end
+  -- TODO this doesn't match anything that is quoted
+  local previous = pkg.previous:gsub('"', '\\"')
+  return line:match(pkg.name..': '..helpers.escape_pattern(previous))
+end
+
+--- This function determines position of dependencies by searching through
+--- the relevant buffer content. Ideally it should only check the relevant sections
+--- @param deps table
+--- @param lines table
+--- @param callback function
+local function report_outdated_packages(deps, lines, callback)
+  if deps and not vim.tbl_isempty(deps) then
+    api.check_outdated_packages(deps, function (pkg)
+      local lnum
+      for idx, line in ipairs(lines) do
+        if is_matching_pkg(pkg, line) then
+          lnum = idx - 1
+        end
+      end
+      if lnum then callback(lnum, pkg.latest) end
+    end)
+  end
+end
 
 --- @param buf_id number
 --- @param callback function
@@ -13,34 +43,33 @@ local function show_dart_versions(buf_id, callback)
   if #lines > 0 then
     local buffer_text = ''
     -- NOTE: filter out blank lines otherwise the parser fails
+    local dependency_section_seen = false
     for _,line in ipairs(lines) do
-      if line ~= "" then
+      -- Filter out all lines that don't relate to our dependencies
+      if line:match(dependency_block) or line:match(dev_block) then
+        dependency_section_seen = true
+      end
+      if line ~= "" and dependency_section_seen then
         buffer_text = buffer_text..'\n' .. line
       end
     end
-    if buffer_text == "" then return end
+
     -- parsing the buffer text should NOT throw an error just fail silently for now
+    if buffer_text == "" then return end
     local success, parsed_lines = pcall(yaml.eval, buffer_text)
     if not success then return end
-    local deps = parsed_lines.dependencies
-    if deps and not vim.tbl_isempty(deps) then
-      api.check_outdated_packages(deps, function (latest)
-        local lnum
-        -- FIXME this matches any lines where the name is the
-        -- not specifically the one dependency
-        for idx, line in ipairs(lines) do
-          if line:match(latest.name..':') then lnum = idx - 1 end
-        end
-        if lnum then callback(lnum, latest.version) end
-      end)
-    end
+
+    local dependencies = parsed_lines.dependencies or {}
+    local dev_dependencies = parsed_lines.dev_dependencies or {}
+    local deps = vim.tbl_extend('force', dependencies, dev_dependencies)
+    report_outdated_packages(deps, lines, callback)
   end
 end
 
 --- @param dependency string
 --- @param is_dev boolean
 local function insert_dependency(dependency, is_dev)
-  local location = is_dev and 'devDependencies:' or 'dependencies:'
+  local location = is_dev and dev_block or dependency_block
   helpers.insert_beneath(location, dependency)
 end
 
