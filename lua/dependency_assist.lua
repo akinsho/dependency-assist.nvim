@@ -1,6 +1,7 @@
 local pubspec_api = require 'dependency_assist/pubspec_api'
 local formatters = require 'dependency_assist/formatters'
 local ui = require 'dependency_assist/ui'
+local yaml = require 'dependency_assist/yaml'
 
 local M = {}
 local supported_filetypes = {
@@ -13,15 +14,15 @@ local function insert_at_cursor_pos(text)
 end
 
 local function insert_package()
-	local package = vim.fn.getline('.')
+	local pkg = vim.fn.getline('.')
 	ui.close()
-	insert_at_cursor_pos(package)
+	insert_at_cursor_pos(pkg)
 end
 
 local function get_package()
-	local package = vim.fn.trim(vim.fn.getline('.'))
-	if package then
-		pubspec_api.get_package(package, function (data)
+	local pkg = vim.fn.trim(vim.fn.getline('.'))
+	if pkg then
+		pubspec_api.get_package(pkg, function (data)
 			local versions = formatters.dart.format_package_details(data)
 			ui.list_window(versions, insert_package)
 		end)
@@ -43,10 +44,16 @@ local function search_package()
 	end
 end
 
--- local function list_packages(data)
--- 	local packages,next_url = formatters.dart.format_packages(data)
--- 	M.list_window(vim.list_extend(packages, {next_url}), insert_package)
--- end
+--- @param buf_id number
+--- @param latest table
+--- @param lines table
+local function show_outdated(buf_id, latest, lines)
+	local lnum
+	for idx, line in ipairs(lines) do
+		if line:match(latest.name..':') then lnum = idx - 1 end
+	end
+	if lnum then ui.set_virtual_text(buf_id, lnum, latest.version) end
+end
 
 --- 1. start package search by opening an input buffer, which registers
 --- a callback once the a selection is made triggering a searck
@@ -64,7 +71,25 @@ function M.setup_ft(preferences)
 	local buf_id = vim.api.nvim_get_current_buf()
 	vim.api.nvim_buf_set_keymap(buf_id, 'n', key, ':SearchPackage<CR>',
 		{noremap = true, silent = true }
-	)
+		)
+
+	local fname = vim.fn.expand('%:t')
+	if fname == 'pubspec.yaml' then
+		local lines = vim.api.nvim_buf_get_lines(buf_id, 0, -1, false)
+		if #lines > 0 then
+			-- TODO empty lines are being omitted this breaks
+			-- parsing for dependencies
+			local buffer_text = table.concat(lines, '\n')
+			local parsed_lines = yaml.eval(buffer_text)
+
+			local deps = parsed_lines.dependencies
+			if deps and not vim.tbl_isempty(deps) then
+				pubspec_api.check_outdated_packages(deps, function (latest)
+					show_outdated(buf_id, latest, lines)
+				end)
+			end
+		end
+	end
 end
 
 function M.setup(preferences)

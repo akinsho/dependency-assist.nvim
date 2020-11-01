@@ -177,4 +177,14 @@ function M.list_window(content, on_select, on_open)
 	if on_open then on_open(win, buf) end
 end
 
+--- @param buf_id number
+--- @param lnum number
+--- @param text string
+--- @param hl string
+function M.set_virtual_text(buf_id, lnum, text, hl)
+	hl = hl or 'Comment'
+	local ns = vim.api.nvim_create_namespace('dependency_assist')
+	vim.api.nvim_buf_set_virtual_text(buf_id, ns, lnum, {{text, hl}}, {})
+end
+
 return M

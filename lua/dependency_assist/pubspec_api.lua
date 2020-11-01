@@ -39,4 +39,13 @@ function M.get_package(name, cb)
 	end)
 end
 
+function M.check_outdated_packages(deps, cb)
+	for name,version in pairs(deps) do
+		M.get_package(name, function (data)
+			local latest = data.latest.version
+			if latest ~= version then cb({name = name, version = latest}) end
+		end)
+	end
+end
+
 return M
