@@ -1,6 +1,10 @@
 local yaml = require 'dependency_assist/yaml'
 local api = require 'dependency_assist/dart/pubspec_api'
 local formatter = require 'dependency_assist/dart/formatter'
+local helpers = require 'dependency_assist/helpers'
+
+local extension = 'dart'
+local dependency_file = 'pubspec.yaml'
 
 --- @param buf_id number
 --- @param callback function
@@ -33,13 +37,23 @@ local function show_dart_versions(buf_id, callback)
   end
 end
 
+--- Find the path of the project's pubspec.yaml
+--- @param buf_id number
+local function find_pubspec_file(buf_id)
+  local dirname = helpers.find_dependency_file(buf_id, function(dir)
+    return vim.fn.filereadable(helpers.path_join(dir, dependency_file)) == 1
+  end)
+  return helpers.path_join(dirname, dependency_file)
+end
+
 
 local dart = {
   api = api,
-  filename = 'pubspec.yaml',
+  filename = dependency_file,
   formatter = formatter,
   show_versions = show_dart_versions,
-  extension = 'dart'
+  find_dependency_file = find_pubspec_file,
+  extension = extension
 }
 
 return dart

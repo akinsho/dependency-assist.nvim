@@ -33,7 +33,6 @@ local function insert_package(buf_id)
   local pkg = vim.fn.getline('.')
   ui.close()
   if not helpers.is_dependency_file(buf_id, assist.filename) then
-    -- FIXME find the project pubspec yaml
     local filepath = assist.find_dependency_file(buf_id)
     vim.cmd('e '..filepath)
   end
