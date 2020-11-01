@@ -6,7 +6,6 @@ local M = {
 
 --- @param parent_buf number
 local function cleanup_autocommands(parent_buf)
-
   vim.cmd('autocmd BufWipeout,BufDelete <buffer> execute "bw '..parent_buf..'" | stopinsert')
   -- vim.cmd'autocmd! WinLeave <buffer> lua require"dependency_assist".close_current_window()'
 end
@@ -94,10 +93,10 @@ local function bordered_window(win_opts, options, callback)
   M.close()
   local parent_buf = api.nvim_create_buf(false, true)
   local max_width = win_opts.width
-  M.parent_buf = parent_buf
 
-  local remainder = max_width - string.len(win_opts.title)
-  local padded_title = win_opts.title .. string.rep("─", remainder - 2)
+  local title = pad(win_opts.title)
+  local remainder = max_width - string.len(title)
+  local padded_title = title .. string.rep("─", remainder - 2)
   local padding = string.rep(" ", max_width - 2)
   local content_width = string.len(padding)
   local bottom_line = string.rep("─", content_width)
@@ -105,28 +104,38 @@ local function bordered_window(win_opts, options, callback)
   local top = "╭" .. padded_title .. "╮"
   local mid = "│" ..   padding    .. "│"
   local bot = "╰" .. bottom_line  .. "╯"
-  local lines = { top, mid, bot }
+
+  local lines = {top}
+  for _=1,win_opts.height do
+    table.insert(lines, mid)
+  end
+  table.insert(lines, bot)
 
   api.nvim_buf_set_lines(parent_buf, 0, -1, false, lines)
 
   local height = #lines
   local config = get_window_config(max_width, height, options.center)
   local win = api.nvim_open_win(parent_buf, false, config)
+
+  config.row = config.row + 1
+  config.height = height - 2
+  config.col = config.col + 2
+  config.width = config.width - 4
+
   callback(win, parent_buf, config)
 end
 
 --- @param title string
 --- @param options table
 function M.input_window(title, options)
-  bordered_window({ title = title, width = 40},
+  bordered_window({
+      title = title,
+      width = 40,
+      height = 1,
+    },
     options,
     function(_, parent_buf, config)
-      config.height = 1
-      config.width = config.width - 2
-      config.col = config.col + 1
-      config.row = config.row + 1
       config.focusable = false
-
       local buf = api.nvim_create_buf(false, true)
       local win = api.nvim_open_win(buf, true, config)
 
@@ -151,13 +160,19 @@ function M.input_window(title, options)
     end)
 end
 
+--- @param title string
 --- @param content table
 --- @param options table
-function M.list_window(content, options)
+function M.list_window(title, content, options)
   local max_width = get_max_width(content, 50)
-  bordered_window({title = 'Search query...', width = max_width},
+  local height = math.min(#content, vim.fn.float2nr(vim.o.lines * 0.5) - 3)
+  bordered_window({
+      title = title,
+      width = max_width,
+      height = height,
+    },
     options,
-    function(parent_win, parent_buf, config)
+    function(_, parent_buf, config)
       local formatted = {}
       for _, item in ipairs(content) do
         table.insert(formatted, pad(item))
@@ -166,24 +181,7 @@ function M.list_window(content, options)
       local buf = api.nvim_create_buf(false, true)
       api.nvim_buf_set_lines(buf, 0, -1, false, formatted)
 
-      local width = max_width + 2
-      local height = math.min(#content, vim.fn.float2nr(vim.o.lines * 0.5) - 3)
-
-      local opts = config
-      local parent_opts = config
-      if M.parent_buf then
-        parent_opts.row = config.row
-        parent_opts.width = width
-        parent_opts.height =  config.height + height
-        api.nvim_win_set_config(parent_win, parent_opts)
-      end
-      -- TODO this should be able to be set to config.height but that value
-      -- is unusually large
-      opts.row = config.row + 3
-      opts.width = width
-      opts.height = height
-
-      local win = api.nvim_open_win(buf, true, opts)
+      local win = api.nvim_open_win(buf, true, config)
       api.nvim_buf_set_option(buf, 'modifiable', false)
 
       vim.wo[win].cursorline = true

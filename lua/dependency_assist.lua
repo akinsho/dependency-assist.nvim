@@ -49,7 +49,7 @@ local function get_package(buf)
   if pkg then
     assistant.api.get_package(pkg, function (data)
       local versions = assistant.formatter.format_package_details(data)
-      ui.list_window(versions, {
+      ui.list_window(pkg..' versions', versions, {
           buf_id = buf,
           center = is_centered(buf),
           on_select = insert_package,
@@ -69,7 +69,7 @@ local function search_package(buf)
         for _, pkg in pairs(data.packages) do
           table.insert(result, pkg.package)
         end
-        ui.list_window(result, {
+        ui.list_window('Query: '..input, result, {
             buf_id = buf,
             center = is_centered(buf),
             on_select = get_package,
@@ -85,7 +85,7 @@ end
 local function dependency_search(is_dev)
   state.is_dev = is_dev
   local buf = vim.api.nvim_get_current_buf()
-  ui.input_window(' Package name ', {
+  ui.input_window('Enter a package name', {
       buf_id = buf,
       center = is_centered(buf),
       on_select = search_package
