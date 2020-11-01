@@ -7,11 +7,14 @@ local formatter = require 'dependency_assist/dart/formatter'
 local function show_dart_versions(buf_id, callback)
   local lines = vim.api.nvim_buf_get_lines(buf_id, 0, -1, false)
   if #lines > 0 then
-    -- TODO empty lines are being omitted this breaks
-    -- parsing for dependencies
-    local buffer_text = table.concat(lines, '\n')
+    local buffer_text = ''
+    -- NOTE: filter out blank lines otherwise the parser fails
+    for _,line in ipairs(lines) do
+      if line ~= "" then
+        buffer_text = buffer_text..'\n' .. line
+      end
+    end
     local parsed_lines = yaml.eval(buffer_text)
-
     local deps = parsed_lines.dependencies
     if deps and not vim.tbl_isempty(deps) then
       api.check_outdated_packages(deps, function (latest)
