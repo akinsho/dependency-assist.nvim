@@ -37,6 +37,13 @@ local function show_dart_versions(buf_id, callback)
   end
 end
 
+--- @param dependency string
+--- @param is_dev boolean
+local function insert_dependency(dependency, is_dev)
+  local location = is_dev and 'devDependencies:' or 'dependencies:'
+  helpers.insert_beneath(location, dependency)
+end
+
 --- Find the path of the project's pubspec.yaml
 --- @param buf_id number
 local function find_pubspec_file(buf_id)
@@ -53,6 +60,7 @@ local dart = {
   formatter = formatter,
   show_versions = show_dart_versions,
   find_dependency_file = find_pubspec_file,
+  insert_dependency = insert_dependency,
   extension = extension
 }
 

@@ -12,6 +12,13 @@ function M.insert_at_cursor_pos(text)
   vim.cmd('execute "normal! i' .. text .. '\\<Esc>"')
 end
 
+--- @param location string
+--- @param text string
+function M.insert_beneath(location, text)
+  local matches = vim.fn.searchpos(location)
+  vim.fn.append(matches[1], text)
+end
+
 --- @param error string
 function M.echoerr(error)
   vim.cmd(string.format('echoerr "%s"', error))

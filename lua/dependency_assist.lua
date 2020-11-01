@@ -28,7 +28,7 @@ local function get_assist(buf)
   helpers.assist_error()
 end
 
-local function insert_package(buf_id)
+local function insert_package(buf_id, is_dev)
   local assist = get_assist(buf_id)
   local pkg = vim.fn.getline('.')
   ui.close()
@@ -36,7 +36,7 @@ local function insert_package(buf_id)
     local filepath = assist.find_dependency_file(buf_id)
     vim.cmd('e '..filepath)
   end
-  helpers.insert_at_cursor_pos(pkg)
+  assist.insert_dependency(pkg, is_dev)
 end
 
 --- @param buf integer
