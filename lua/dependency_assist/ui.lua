@@ -100,13 +100,15 @@ function M.input_window(title, options)
 
   local height = #lines
   local config = get_window_config(max_width, height, options.center)
+
+  config.focusable = false
   api.nvim_open_win(parent_buf, false, config)
 
   config.height = 1
   config.width = max_width - 2
   config.col = config.col + 1
   config.row = config.row + 1
-  config.focusable = false
+  config.focusable = true
 
   local buf = api.nvim_create_buf(false, true)
   local win = api.nvim_open_win(buf, true, config)
