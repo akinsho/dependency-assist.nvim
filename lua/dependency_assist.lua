@@ -4,8 +4,31 @@ local ui = require 'dependency_assist/ui'
 local yaml = require 'dependency_assist/yaml'
 
 local M = {}
+
+--- @param buf_id number
+local function show_dart_versions(buf_id)
+	local lines = vim.api.nvim_buf_get_lines(buf_id, 0, -1, false)
+	if #lines > 0 then
+		-- TODO empty lines are being omitted this breaks
+		-- parsing for dependencies
+		local buffer_text = table.concat(lines, '\n')
+		local parsed_lines = yaml.eval(buffer_text)
+
+		local deps = parsed_lines.dependencies
+		if deps and not vim.tbl_isempty(deps) then
+			pubspec_api.check_outdated_packages(deps, function (latest)
+				local lnum
+				for idx, line in ipairs(lines) do
+					if line:match(latest.name..':') then lnum = idx - 1 end
+				end
+				if lnum then ui.set_virtual_text(buf_id, lnum, latest.version) end
+			end)
+		end
+	end
+end
+
 local supported_filetypes = {
-	dart = {filename = 'pubspec.yaml'}
+	dart = {filename = 'pubspec.yaml', show_versions = show_dart_versions}
 }
 
 --- @param text string
@@ -44,17 +67,6 @@ local function search_package()
 	end
 end
 
---- @param buf_id number
---- @param latest table
---- @param lines table
-local function show_outdated(buf_id, latest, lines)
-	local lnum
-	for idx, line in ipairs(lines) do
-		if line:match(latest.name..':') then lnum = idx - 1 end
-	end
-	if lnum then ui.set_virtual_text(buf_id, lnum, latest.version) end
-end
-
 --- 1. start package search by opening an input buffer, which registers
 --- a callback once the a selection is made triggering a searck
 function M.start_package_search()
@@ -74,24 +86,14 @@ function M.setup_ft(preferences)
 		)
 
 	local fname = vim.fn.expand('%:t')
-	if fname == 'pubspec.yaml' then
-		local lines = vim.api.nvim_buf_get_lines(buf_id, 0, -1, false)
-		if #lines > 0 then
-			-- TODO empty lines are being omitted this breaks
-			-- parsing for dependencies
-			local buffer_text = table.concat(lines, '\n')
-			local parsed_lines = yaml.eval(buffer_text)
-
-			local deps = parsed_lines.dependencies
-			if deps and not vim.tbl_isempty(deps) then
-				pubspec_api.check_outdated_packages(deps, function (latest)
-					show_outdated(buf_id, latest, lines)
-				end)
+	for filetype, opts in pairs(supported_filetypes) do
+			if fname == opts.filename then
+				return supported_filetypes[filetype].show_versions(buf_id)
 			end
-		end
 	end
 end
 
+--- @param preferences table
 function M.setup(preferences)
 	local fts = {}
 	for _,ft in pairs(supported_filetypes) do
