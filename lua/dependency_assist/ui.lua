@@ -83,16 +83,13 @@ end
 
 --- @param width integer
 --- @param height integer
---- @param center integer
-local function get_window_config(width, height, center)
-  local col = center and (vim.o.columns - width) / 2 or 1
-  local row = center and (vim.o.lines * 0.2) or 1
+local function get_window_config(width, height)
   local opts = {
-    relative = center and 'editor' or 'cursor',
+    relative = 'cursor',
     width = width,
     height = height,
-    col = col,
-    row = row,
+    col = 1,
+    row = 1,
     style = 'minimal',
     focusable = true
   }
@@ -104,7 +101,7 @@ local function set_current_buf(buf)
   M.is_open = true
 end
 
-local function bordered_window(win_opts, options, callback)
+local function bordered_window(win_opts, callback)
   M.close()
   local parent_buf = api.nvim_create_buf(false, true)
   local max_width = win_opts.width
@@ -129,7 +126,7 @@ local function bordered_window(win_opts, options, callback)
   api.nvim_buf_set_lines(parent_buf, 0, -1, false, lines)
 
   local height = #lines
-  local config = get_window_config(max_width, height, options.center)
+  local config = get_window_config(max_width, height)
   local win = api.nvim_open_win(parent_buf, false, config)
 
   config.row = config.row + 1
@@ -148,7 +145,6 @@ function M.input_window(title, options)
       width = 40,
       height = 1,
     },
-    options,
     function(_, parent_buf, config)
       config.focusable = false
       local buf = api.nvim_create_buf(false, true)
@@ -186,7 +182,6 @@ function M.list_window(title, content, options)
       width = max_width,
       height = height,
     },
-    options,
     function(_, parent_buf, config)
       local formatted = {}
       for _, item in ipairs(content) do

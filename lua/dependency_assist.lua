@@ -6,12 +6,6 @@ local M = {}
 
 local state = { is_dev = false }
 
-local function is_centered(buf)
-  local ft = vim.bo[buf].filetype
-  local center = assistants[ft] ~= nil
-  return center
-end
-
 --- @param buf integer
 local function get_assistant(buf)
   local ft = vim.bo[buf].filetype
@@ -51,7 +45,6 @@ local function get_package(buf)
       local versions = assistant.formatter.format_package_details(data)
       ui.list_window(pkg..' versions', versions, {
           buf_id = buf,
-          center = is_centered(buf),
           on_select = insert_package,
         })
     end)
@@ -71,7 +64,6 @@ local function search_package(buf)
         end
         ui.list_window('Query: '..input, result, {
             buf_id = buf,
-            center = is_centered(buf),
             on_select = get_package,
           })
       end
@@ -87,7 +79,6 @@ local function dependency_search(is_dev)
   local buf = vim.api.nvim_get_current_buf()
   ui.input_window('Enter a package name', {
       buf_id = buf,
-      center = is_centered(buf),
       on_select = search_package
   })
 end
