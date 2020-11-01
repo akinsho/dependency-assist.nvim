@@ -1,8 +1,15 @@
 local ui = require 'dependency_assist/ui'
-local supported_filetypes = require 'dependency_assist/'
+local assistants = require 'dependency_assist/'
 local helpers = require 'dependency_assist/helpers'
 
 local M = {}
+
+local function is_centered(buf)
+  local ft = vim.bo[buf].filetype
+  local center = assistants[ft] ~= nil
+  return center
+end
+
 
 local function insert_package()
   local pkg = vim.fn.getline('.')
@@ -13,15 +20,15 @@ end
 --- @param buf integer
 local function get_assist(buf)
   local ft = vim.bo[buf].filetype
-  local assist = supported_filetypes[ft]
+  local assist = assistants[ft]
   -- if we can't get the correct tool based on filetype
   -- check if the dependency file name for the filetype matches
   -- our current file
   if not assist then
     local fname = vim.fn.expand('#'..buf..':t')
-    for filetype, opts in pairs(supported_filetypes) do
+    for filetype, opts in pairs(assistants) do
       if fname == opts.filename then
-        assist = supported_filetypes[filetype]
+        assist = assistants[filetype]
       end
     end
   end
@@ -29,19 +36,25 @@ local function get_assist(buf)
   helpers.assist_error()
 end
 
---- @param assist table
-local function get_package(assist)
+--- @param buf integer
+local function get_package(buf)
+  local assist = get_assist(buf)
   local pkg = vim.fn.trim(vim.fn.getline('.'))
   if pkg then
     assist.api.get_package(pkg, function (data)
       local versions = assist.formatter.format_package_details(data)
-      ui.list_window(versions, { on_select = insert_package })
+      ui.list_window(versions, {
+          buf_id = buf,
+          center = is_centered(buf),
+          on_select = insert_package,
+        })
     end)
   end
 end
 
---- @param assist table
-local function search_package(assist)
+--- @param buf integer
+local function search_package(buf)
+  local assist = get_assist(buf)
   local input = ui.get_current_input()
   if input:len() > 0 then
     assist.api.search_package(input, function (data)
@@ -51,9 +64,9 @@ local function search_package(assist)
           table.insert(result, pkg.package)
         end
         ui.list_window(result, {
-            on_select = function()
-              get_package(assist)
-            end
+            buf_id = buf,
+            center = is_centered(buf),
+            on_select = get_package,
           })
       end
     end)
@@ -64,11 +77,10 @@ end
 --- a callback once the a selection is made triggering a searck
 function M.start_package_search()
   local buf = vim.api.nvim_get_current_buf()
-  local assist = get_assist(buf)
   ui.input_window(' Package name ', {
-    on_select = function()
-      search_package(assist)
-    end
+      buf_id = buf,
+      center = is_centered(buf),
+      on_select = search_package
   })
 end
 
@@ -96,17 +108,21 @@ end
 
 --- @param preferences table
 function M.setup(preferences)
+  local names = {}
   local fts = {}
-  for _,ft in pairs(supported_filetypes) do
-    table.insert(fts, ft.filename)
+  for ft,data in pairs(assistants) do
+    table.insert(names, data.filename)
+    table.insert(fts, ft)
   end
-  local all_fts = table.concat(fts, ',')
+  local filenames = table.concat(names, ',')
+  local filetypes = table.concat(fts, ',')
 
   function _G.__dep_assist_ft_setup()
     M.setup_ft(preferences)
   end
 
-  vim.cmd('autocmd! BufEnter '..all_fts..' lua _G.__dep_assist_ft_setup()')
+  vim.cmd('autocmd! BufEnter '..filenames..' lua _G.__dep_assist_ft_setup()')
+  vim.cmd('autocmd! FileType '..filetypes..' lua _G.__dep_assist_ft_setup()')
 end
 
 M.close_current_window = ui.close

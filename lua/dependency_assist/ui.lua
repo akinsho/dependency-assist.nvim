@@ -107,7 +107,7 @@ function M.input_window(title, options)
   -- TODO once native lua callbacks are allowed in mappings
   -- remove this global function
   function _G.__dep_assist_input_cb()
-    options.on_select()
+    options.on_select(options.buf_id)
   end
 
   set_mappings(buf, vim.list_extend({
@@ -156,12 +156,12 @@ function M.list_window(content, options)
   api.nvim_buf_set_option(buf, 'modifiable', false)
 
   vim.wo[win].cursorline = true
-  vim.cmd('set winhighlight=CursorLine:TabLineSel')
+  api.nvim_win_set_option(win, 'winhl', 'CursorLine:TabLineSel')
 
   -- TODO once native lua callbacks are allowed in mappings
   -- remove this global function
   function _G.__dep_assist_list_cb()
-    options.on_select()
+    options.on_select(options.buf_id)
   end
 
   set_mappings(buf, vim.list_extend({
