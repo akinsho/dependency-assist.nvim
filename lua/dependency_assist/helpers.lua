@@ -1,4 +1,9 @@
 local M = {}
+
+function M.create_cmd(cmd_name, cmd_type, func_name)
+  vim.cmd('command! -'..cmd_type..' '..cmd_name..' lua require"dependency_assist".'..func_name..'()')
+end
+
 --- @param ft string
 function M.assist_error(ft)
   local cmd = ft  == ''
