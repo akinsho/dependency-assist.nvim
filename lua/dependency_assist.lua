@@ -1,8 +1,10 @@
 local ui = require 'dependency_assist/ui'
 local assistants = require 'dependency_assist/'
-local helpers = require 'dependency_assist/helpers'
+local h = require 'dependency_assist/helpers'
 
 local M = {}
+
+local state = { is_dev = false }
 
 local function is_centered(buf)
   local ft = vim.bo[buf].filetype
@@ -19,24 +21,25 @@ local function get_assistant(buf)
   -- our current file
   if not assistant then
     for filetype, opts in pairs(assistants) do
-      if helpers.is_dependency_file(buf, opts.filename) then
+      if h.is_dependency_file(buf, opts.filename) then
         assistant = assistants[filetype]
       end
     end
   end
   if assistant then return assistant end
-  helpers.assistant_error()
+  h.assistant_error()
 end
 
-local function insert_package(buf_id, is_dev)
+local function insert_package(buf_id)
   local assistant = get_assistant(buf_id)
   local pkg = vim.fn.getline('.')
   ui.close()
-  if not helpers.is_dependency_file(buf_id, assistant.filename) then
+  if not h.is_dependency_file(buf_id, assistant.filename) then
     local filepath = assistant.find_dependency_file(buf_id)
     vim.cmd('e '..filepath)
   end
-  assistant.insert_dependency(pkg, is_dev)
+  assistant.insert_dependency(pkg, state.is_dev)
+  state.is_dev = nil
 end
 
 --- @param buf integer
@@ -78,13 +81,27 @@ end
 
 --- 1. start package search by opening an input buffer, which registers
 --- a callback once the a selection is made triggering a searck
-function M.dependency_search()
+--- @param is_dev boolean
+local function dependency_search(is_dev)
+  state.is_dev = is_dev
   local buf = vim.api.nvim_get_current_buf()
   ui.input_window(' Package name ', {
       buf_id = buf,
       center = is_centered(buf),
       on_select = search_package
   })
+end
+
+-- TODO if the booleans could be passed to the
+-- commands directly these would not be necessary
+-- although passing args to `vim.cmd` does not work
+-- for some reason
+function M.dev_dependency_search()
+  dependency_search(true)
+end
+
+function M.dependency_search()
+  dependency_search(false)
 end
 
 local function check_is_setup(buf_id)
@@ -105,8 +122,10 @@ end
 --- @param preferences table
 local function setup_dependency_file(buf_id, preferences)
   if preferences and preferences.key then
-    vim.api.nvim_buf_set_keymap(buf_id, 'n', preferences.key,
-      ':SearchPackage<CR>', { noremap = true, silent = true, })
+    vim.api.nvim_buf_set_keymap(buf_id, 'n', preferences.key, ':AddDependency<CR>', {
+        noremap = true,
+        silent = true,
+      })
   end
 
   M.show_versions(buf_id)
@@ -130,9 +149,10 @@ local function setup_ft(preferences)
   h.create_cmd('AddDependency', 'buffer', 'dev_dependency_search')
   h.create_cmd('AddDevDependency', 'buffer', 'dependency_search')
 
-  if helpers.is_dependency_file(buf_id, assistant.filename) then
+  if h.is_dependency_file(buf_id, assistant.filename) then
     setup_dependency_file(buf_id, preferences)
   end
+
   vim.api.nvim_buf_set_var(buf_id, 'dependency_assistant_setup', true)
 end
 
