@@ -1,17 +1,13 @@
 local ui = require 'dependency_assist/ui'
 local supported_filetypes = require 'dependency_assist/supported_fts'
+local helpers = require 'dependency_assist/helpers'
 
 local M = {}
-
---- @param text string
-local function insert_at_cursor_pos(text)
-  vim.cmd('execute "normal! i' .. text .. '\\<Esc>"')
-end
 
 local function insert_package()
   local pkg = vim.fn.getline('.')
   ui.close()
-  insert_at_cursor_pos(pkg)
+  helpers.insert_at_cursor_pos(pkg)
 end
 
 --- @param buf integer
@@ -30,14 +26,7 @@ local function get_assist(buf)
     end
   end
   if assist then return assist end
-
-  local cmd
-  if ft == '' then
-    cmd = "Dependency couldn't get the correct filetype"
-  else
-    cmd = 'Dependency assist does not support '..ft
-  end
-  vim.cmd(string.format('echoerr "%s"', cmd))
+  helpers.assist_error()
 end
 
 --- @param assist table
@@ -97,7 +86,7 @@ function M.setup_ft(preferences)
   return assist.show_versions(
     buf_id,
     function(lnum, version)
-      ui.set_virtual_text(buf_id, lnum, version)
+      ui.set_virtual_text(buf_id, lnum, version, 'DiffAdd')
     end)
 end
 
