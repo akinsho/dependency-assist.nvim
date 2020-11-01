@@ -14,7 +14,10 @@ local function show_dart_versions(buf_id, callback)
         buffer_text = buffer_text..'\n' .. line
       end
     end
-    local parsed_lines = yaml.eval(buffer_text)
+    if buffer_text == "" then return end
+    -- parsing the buffer text should NOT throw an error just fail silently for now
+    local success, parsed_lines = pcall(yaml.eval, buffer_text)
+    if not success then return end
     local deps = parsed_lines.dependencies
     if deps and not vim.tbl_isempty(deps) then
       api.check_outdated_packages(deps, function (latest)
