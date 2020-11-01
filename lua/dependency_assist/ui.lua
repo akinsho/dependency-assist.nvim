@@ -55,6 +55,24 @@ function M.close()
   end
 end
 
+--- @param width integer
+--- @param height integer
+--- @param center integer
+local function get_window_config(width, height, center)
+  local col = center and (vim.o.columns - width) / 2 or 1
+  local row = center and (vim.o.lines * 0.2) or 1
+  local opts = {
+    relative = center and 'editor' or 'cursor',
+    width = width,
+    height = height,
+    col = col,
+    row = row,
+    style = 'minimal',
+    focusable = true
+  }
+  return opts
+end
+
 local function set_current_buf(buf)
   M.current_buf = buf
   M.is_open = true
@@ -81,26 +99,17 @@ function M.input_window(title, options)
   api.nvim_buf_set_lines(parent_buf, 0, -1, false, lines)
 
   local height = #lines
-  local opts = {
-    relative = 'cursor',
-    width = max_width,
-    height = height,
-    col = 1,
-    row = 1,
-    style = 'minimal',
-    focusable = true
-  }
-  local parent_win = api.nvim_open_win(parent_buf, false, opts)
-  api.nvim_win_set_option(parent_win, 'winhl', 'Normal:Normal')
+  local config = get_window_config(max_width, height, options.center)
+  api.nvim_open_win(parent_buf, false, config)
 
-  opts.height = 1
-  opts.width = max_width - 2
-  opts.col = opts.col + 1
-  opts.row = opts.row + 1
+  config.height = 1
+  config.width = max_width - 2
+  config.col = config.col + 1
+  config.row = config.row + 1
+  config.focusable = false
 
   local buf = api.nvim_create_buf(false, true)
-  local win = api.nvim_open_win(buf, true, opts)
-  api.nvim_win_set_option(win, 'winhl', 'Normal:Normal')
+  local win = api.nvim_open_win(buf, true, config)
 
   vim.cmd('autocmd BufWipeout,BufDelete <buffer> execute "bw '..parent_buf..'" | stopinsert')
 
@@ -143,15 +152,7 @@ function M.list_window(content, options)
   local max_width = get_max_width(content, 50)
   local width = max_width + 2
   local height = math.min(#content, vim.fn.float2nr(vim.o.lines * 0.5) - 3)
-  local opts = {
-    relative = 'cursor',
-    width = width,
-    height = height,
-    col = 1,
-    row = 1,
-    style = 'minimal',
-    focusable = true
-  }
+  local opts = get_window_config(width, height, options.center)
   local win = api.nvim_open_win(buf, true, opts)
   api.nvim_buf_set_option(buf, 'modifiable', false)
 
