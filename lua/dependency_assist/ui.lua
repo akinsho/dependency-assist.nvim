@@ -1,4 +1,6 @@
 local api = vim.api
+local helpers = require'dependency_assist/helpers'
+
 local M = {
   is_open = false,
   current_buf = nil,
@@ -6,8 +8,21 @@ local M = {
 
 --- @param parent_buf number
 local function cleanup_autocommands(parent_buf)
-  vim.cmd('autocmd BufWipeout,BufDelete <buffer> execute "bw '..parent_buf..'" | stopinsert')
-  -- vim.cmd'autocmd! WinLeave <buffer> lua require"dependency_assist".close_current_window()'
+  helpers.create_augroups({
+      dependency_assist_cleanup = {
+        {
+          "BufWipeout,BufDelete",
+          "<buffer>",
+          string.format([[execute "bw %d | stopinsert"]], parent_buf),
+        };
+        {
+          "WinLeave",
+          "<buffer>",
+          "nested",
+          [[lua require"dependency_assist".close_current_window()]],
+        };
+    }
+  })
 end
 
 local function pad(line)

@@ -136,7 +136,11 @@ local function setup_dependency_file(buf_id, preferences)
 
   -- TODO cache the versions so this isn't triggered too often
   -- once caching success fully consider using TextChanged
-  vim.cmd('autocmd! BufWritePost <buffer> lua _G.__dep_assistant_update_versions()')
+  h.create_augroups({
+      dependency_assist_update_versions = {
+        {'BufWritePost', '<buffer>', [[lua _G.__dep_assistant_update_versions()]]}
+      }
+    })
 end
 
 --- @param preferences table
@@ -169,7 +173,11 @@ function M.setup(preferences)
     setup_ft(preferences)
   end
 
-  vim.cmd('autocmd! BufEnter '..filenames..' lua _G.__dep_assistant_setup()')
+  h.create_augroups({
+    dependency_assist_setup = {
+      {'BufEnter', filenames, [[lua _G.__dep_assistant_setup()]]}
+    }
+  })
 end
 
 M.close_current_window = ui.close

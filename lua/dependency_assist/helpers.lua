@@ -77,4 +77,17 @@ function M.find_dependency_file(buf_id, is_root_path)
   end
 end
 
+--- @param definitions table
+function M.create_augroups(definitions)
+  for group_name, definition in pairs(definitions) do
+    vim.cmd('augroup '..group_name)
+    vim.cmd('autocmd!')
+    for _, def in ipairs(definition) do
+      local command = table.concat(vim.tbl_flatten{'autocmd', def}, ' ')
+      vim.cmd(command)
+    end
+    vim.cmd('augroup END')
+  end
+end
+
 return M
