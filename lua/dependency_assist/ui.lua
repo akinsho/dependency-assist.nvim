@@ -112,7 +112,7 @@ local function highlight_title(buf, title)
     0, -- line number
     start_col, -- start
     start_col + title:len() -- end
-    )
+  )
 end
 
 local function bordered_window(win_opts, callback)

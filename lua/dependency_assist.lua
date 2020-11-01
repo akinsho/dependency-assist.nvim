@@ -141,8 +141,8 @@ local function setup_ft(preferences)
   if already_setup then return end
 
   local assistant = get_assistant(buf_id)
-  h.create_cmd('AddDependency', 'buffer', 'dev_dependency_search')
-  h.create_cmd('AddDevDependency', 'buffer', 'dependency_search')
+  h.create_cmd('AddDependency', 'buffer', 'dependency_search')
+  h.create_cmd('AddDevDependency', 'buffer', 'dev_dependency_search')
 
   if h.is_dependency_file(buf_id, assistant.filename) then
     setup_dependency_file(buf_id, preferences)

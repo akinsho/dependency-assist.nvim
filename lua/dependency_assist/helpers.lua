@@ -12,16 +12,25 @@ function M.assist_error(ft)
   M.echoerr(cmd)
 end
 
---- @param text string
-function M.insert_at_cursor_pos(text)
-  vim.cmd('execute "normal! i' .. text .. '\\<Esc>"')
+--- @param msg string
+--- @param hl string
+function M.echomsg(msg, hl)
+  hl = hl or 'Title'
+  vim.cmd('echohl '..hl)
+  vim.cmd(msg)
+  vim.cmd('echohl clear')
 end
 
 --- @param location string
 --- @param text string
 function M.insert_beneath(location, text)
   local matches = vim.fn.searchpos(location)
-  vim.fn.append(matches[1], text)
+  if matches[1] == 0 then
+    M.echomsg(string.format([[echomsg "Couldn't find %s"]], location))
+  else
+    -- TODO see appendbufline
+    vim.fn.append(matches[1], text)
+  end
 end
 
 --- @param error string
