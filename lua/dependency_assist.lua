@@ -105,8 +105,12 @@ function M.show_versions(buf_id)
   local assistant = get_assistant(buf_id)
   assistant.show_versions(buf_id,
     function(lnum, version)
-      ui.set_virtual_text(buf_id, lnum, version, 'DiffAdd')
+      ui.set_virtual_text(buf_id, lnum, version, 'DependencyAssistVirtText')
     end)
+end
+
+function M.set_highlights()
+  vim.cmd('highlight DependencyAssistVirtText guifg=LightGreen gui=bold,italic')
 end
 
 --- @param buf_id number
@@ -125,9 +129,13 @@ local function setup_dependency_file(buf_id, preferences)
     M.show_versions(buf_id)
   end
 
+  M.set_highlights()
   -- TODO cache the versions so this isn't triggered too often
   -- once caching success fully consider using TextChanged
   h.create_augroups({
+      dependency_assist_highlights = {
+        {'ColorScheme', '*', [[lua require"dependency_assist".set_highlights()]]}
+      };
       dependency_assist_update_versions = {
         {'BufWritePost', '<buffer>', [[lua _G.__dep_assistant_update_versions()]]}
       }
