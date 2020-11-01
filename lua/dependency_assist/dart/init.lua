@@ -19,6 +19,8 @@ local function show_dart_versions(buf_id, callback)
     if deps and not vim.tbl_isempty(deps) then
       api.check_outdated_packages(deps, function (latest)
         local lnum
+        -- FIXME this matches any lines where the name is the
+        -- not specifically the one dependency
         for idx, line in ipairs(lines) do
           if line:match(latest.name..':') then lnum = idx - 1 end
         end
