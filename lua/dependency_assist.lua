@@ -11,41 +11,41 @@ local function is_centered(buf)
 end
 
 --- @param buf integer
-local function get_assist(buf)
+local function get_assistant(buf)
   local ft = vim.bo[buf].filetype
-  local assist = assistants[ft]
+  local assistant = assistants[ft]
   -- if we can't get the correct tool based on filetype
   -- check if the dependency file name for the filetype matches
   -- our current file
-  if not assist then
+  if not assistant then
     for filetype, opts in pairs(assistants) do
       if helpers.is_dependency_file(buf, opts.filename) then
-        assist = assistants[filetype]
+        assistant = assistants[filetype]
       end
     end
   end
-  if assist then return assist end
-  helpers.assist_error()
+  if assistant then return assistant end
+  helpers.assistant_error()
 end
 
 local function insert_package(buf_id, is_dev)
-  local assist = get_assist(buf_id)
+  local assistant = get_assistant(buf_id)
   local pkg = vim.fn.getline('.')
   ui.close()
-  if not helpers.is_dependency_file(buf_id, assist.filename) then
-    local filepath = assist.find_dependency_file(buf_id)
+  if not helpers.is_dependency_file(buf_id, assistant.filename) then
+    local filepath = assistant.find_dependency_file(buf_id)
     vim.cmd('e '..filepath)
   end
-  assist.insert_dependency(pkg, is_dev)
+  assistant.insert_dependency(pkg, is_dev)
 end
 
 --- @param buf integer
 local function get_package(buf)
-  local assist = get_assist(buf)
+  local assistant = get_assistant(buf)
   local pkg = vim.fn.trim(vim.fn.getline('.'))
   if pkg then
-    assist.api.get_package(pkg, function (data)
-      local versions = assist.formatter.format_package_details(data)
+    assistant.api.get_package(pkg, function (data)
+      local versions = assistant.formatter.format_package_details(data)
       ui.list_window(versions, {
           buf_id = buf,
           center = is_centered(buf),
@@ -57,10 +57,10 @@ end
 
 --- @param buf integer
 local function search_package(buf)
-  local assist = get_assist(buf)
+  local assistant = get_assistant(buf)
   local input = ui.get_current_input()
   if input:len() > 0 then
-    assist.api.search_package(input, function (data)
+    assistant.api.search_package(input, function (data)
       local result = {}
       if data then
         for _, pkg in pairs(data.packages) do
@@ -88,21 +88,21 @@ function M.dependency_search()
 end
 
 local function check_is_setup(buf_id)
-  local key = 'dependency_assist_setup'
+  local key = 'dependency_assistant_setup'
   local success, value = pcall(vim.api.nvim_buf_get_var, buf_id, key)
   return success and value or false
 end
 
 --- @param buf_id number
 --- @param preferences table
---- @param assist table
-local function setup_dependency_file(buf_id, preferences, assist)
+--- @param assistant table
+local function setup_dependency_file(buf_id, preferences, assistant)
   if preferences and preferences.key then
     vim.api.nvim_buf_set_keymap(buf_id, 'n', preferences.key,
       ':SearchPackage<CR>', { noremap = true, silent = true, })
   end
 
-  assist.show_versions(buf_id,
+  assistant.show_versions(buf_id,
     function(lnum, version)
       ui.set_virtual_text(buf_id, lnum, version, 'DiffAdd')
     end)
@@ -114,13 +114,13 @@ local function setup_ft(preferences)
   local already_setup = check_is_setup(buf_id)
   if already_setup then return end
 
-  local assist = get_assist(buf_id)
+  local assistant = get_assistant(buf_id)
   vim.cmd'command! -buffer SearchPackage lua require"dependency_assist".dependency_search()'
 
-  if helpers.is_dependency_file(buf_id, assist.filename) then
-    setup_dependency_file(buf_id, preferences, assist)
+  if helpers.is_dependency_file(buf_id, assistant.filename) then
+    setup_dependency_file(buf_id, preferences, assistant)
   end
-  vim.api.nvim_buf_set_var(buf_id, 'dependency_assist_setup', true)
+  vim.api.nvim_buf_set_var(buf_id, 'dependency_assistant_setup', true)
 end
 
 --- @param preferences table
@@ -132,11 +132,11 @@ function M.setup(preferences)
   end
   local filenames = table.concat(names, ',')
 
-  function _G.__dep_assist_setup()
+  function _G.__dep_assistant_setup()
     setup_ft(preferences)
   end
 
-  vim.cmd('autocmd! BufEnter '..filenames..' lua _G.__dep_assist_setup()')
+  vim.cmd('autocmd! BufEnter '..filenames..' lua _G.__dep_assistant_setup()')
 end
 
 M.close_current_window = ui.close
