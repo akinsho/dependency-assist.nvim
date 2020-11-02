@@ -197,6 +197,7 @@ function M.list_window(title, content, options)
   local width = get_max_width(content, MAX_WIDTH)
   local max_height = vim.fn.float2nr(vim.o.lines * 0.5) - vim.o.cmdheight - 1
   local height = math.min(#content, max_height)
+  title = title ..' ('..#content..')'
   local border_opts = {title = title, width = width, height = height}
   local formatted = format_content(content)
 
