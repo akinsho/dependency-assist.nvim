@@ -5,8 +5,15 @@ local MAX_WIDTH = 50
 
 local M = {
   is_open = false,
-  current_buf = nil,
+  current = nil,
 }
+
+--- @param search string
+--- @return nil|table
+local function get_current_by_type(search)
+  if not M.current then return nil end
+  return M.current.type == search and M.current or nil
+end
 
 --- @param parent_buf number
 local function cleanup_autocommands(parent_buf)
@@ -62,13 +69,6 @@ local function format_content(content)
   return formatted
 end
 
-
-function M.get_current_input()
-  local input = vim.fn.trim(vim.fn.getline('.'))
-  M.close()
-  return input
-end
-
 --- @param lines table
 --- @param max_width number
 local function get_max_width(lines, max_width)
@@ -78,10 +78,19 @@ local function get_max_width(lines, max_width)
   return max_width
 end
 
+--- @param content table
+--- @return nil
+local function append_to_current(content)
+  local b = M.current.buf
+  vim.bo[b].modifiable = true
+  api.nvim_buf_set_lines(b, 0, -1, false, content)
+  vim.bo[b].modifiable = false
+end
+
 function M.close()
-  if M.current_buf and M.is_open then
-    vim.cmd('bw '..M.current_buf)
-    M.current_buf = nil
+  if M.current and M.is_open then
+    vim.cmd('bw '..M.current.buf)
+    M.current = nil
     M.is_open = false
   end
 end
@@ -104,8 +113,8 @@ local function get_window_config(width, height)
   return opts
 end
 
-local function set_current_buf(buf)
-  M.current_buf = buf
+local function register_current_buf(buf)
+  M.current = buf
   M.is_open = true
 end
 
@@ -125,7 +134,7 @@ end
 
 local function bordered_window(win_opts, callback)
   M.close()
-  local parent_buf = api.nvim_create_buf(false, true)
+  local buf = api.nvim_create_buf(false, true)
   local max_width = win_opts.width
 
   local title = pad(win_opts.title)
@@ -145,12 +154,12 @@ local function bordered_window(win_opts, callback)
   end
   table.insert(lines, bot)
 
-  api.nvim_buf_set_lines(parent_buf, 0, -1, false, lines)
-  highlight_title(parent_buf, win_opts.title)
+  api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  highlight_title(buf, win_opts.title)
 
   local height = #lines
   local config = get_window_config(max_width, height)
-  local win = api.nvim_open_win(parent_buf, false, config)
+  api.nvim_open_win(buf, false, config)
 
   config.row = config.row + 1
   config.height = height - 2
@@ -158,14 +167,14 @@ local function bordered_window(win_opts, callback)
   config.width = config.width - 4
   config.focusable = true
 
-  callback(win, parent_buf, config)
+  callback(buf, config)
 end
 
 --- @param title string
 --- @param options table
 function M.input_window(title, options)
   local border_opts = { title = title, width = MAX_WIDTH, height = 1 }
-  bordered_window(border_opts, function(_, parent_buf, config)
+  bordered_window(border_opts, function(parent_buf, config)
     local buf = api.nvim_create_buf(false, true)
     local win = api.nvim_open_win(buf, true, config)
 
@@ -181,7 +190,7 @@ function M.input_window(title, options)
     vim.cmd('startinsert!')
     cleanup_autocommands(parent_buf)
 
-    set_current_buf(buf)
+    register_current_buf({buf = buf, win = win, type = 'input'})
     if options.on_open then options.on_open(win, buf) end
   end)
 end
@@ -194,12 +203,16 @@ function M.list_window(title, content, options)
   local max_height = vim.fn.float2nr(vim.o.lines * 0.5) - vim.o.cmdheight - 1
   local height = math.min(#content, max_height)
   local border_opts = {title = title, width = max_width, height = height}
+  local formatted = format_content(content)
 
-  bordered_window(border_opts, function(_, parent_buf, config)
+  if get_current_by_type('list') then
+    return append_to_current(formatted)
+  end
+
+  bordered_window(border_opts, function(parent_buf, config)
     local buf = api.nvim_create_buf(false, true)
-    api.nvim_buf_set_lines(buf, 0, -1, false, format_content(content))
+    api.nvim_buf_set_lines(buf, 0, -1, false, formatted)
     local win = api.nvim_open_win(buf, true, config)
-
 
     vim.bo[buf].modifiable = false
     vim.wo[win].cursorline = true
@@ -215,7 +228,7 @@ function M.list_window(title, content, options)
       lhs = '<CR>',
       rhs = ':lua __dep_assist_list_cb()<CR>',
     }})
-    set_current_buf(buf)
+    register_current_buf({buf = buf, win = win, type = 'list'})
 
     if options.on_open then options.on_open(win, buf) end
   end)
@@ -229,6 +242,12 @@ function M.set_virtual_text(buf_id, lnum, text, hl)
   hl = hl or 'Comment'
   local ns = vim.api.nvim_create_namespace('dependency_assist')
   vim.api.nvim_buf_set_virtual_text(buf_id, ns, lnum, {{text, hl}}, {})
+end
+
+function M.get_current_input()
+  local input = vim.fn.trim(vim.fn.getline('.'))
+  M.close()
+  return input
 end
 
 return M
