@@ -1,4 +1,5 @@
 local Api = require'dependency_assist/api'
+local helpers = require'dependency_assist/helpers'
 
 local M = {}
 
@@ -12,7 +13,7 @@ function M.get_packages(cb)
     if data then
       cb(data)
     else
-      vim.cmd('echoerr "No packages found"')
+      helpers.echoerr("No packages found")
     end
   end)
 end
@@ -24,7 +25,7 @@ function M.search_package(name, cb)
     if data then
       cb(data)
     else
-      vim.cmd('echoerr "'..name..'not found"')
+      helpers.echoerr(name..'not found')
     end
   end)
 end
@@ -34,7 +35,7 @@ function M.get_package(name, cb)
     if data then
       cb(data)
     else
-      vim.cmd('echoerr "'..name..'not found"')
+      helpers.echoerr(name..'not found')
     end
   end)
 end
