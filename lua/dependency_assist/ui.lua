@@ -191,10 +191,13 @@ function M.input_window(title, options)
 end
 
 --- @param content table<string>
+--- @return table<string>, bool
 local function validate_content(content)
-  return #content == 0
-    and {'No results'}
-    or content
+  if #content == 0 then
+    return {'No results'}, false
+  else
+    return content, true
+  end
 end
 
 --- @param title string
@@ -203,7 +206,8 @@ end
 function M.list_window(title, content, options)
   local width = get_max_width(content, MAX_WIDTH)
   local max_height = vim.fn.float2nr(vim.o.lines * 0.5) - vim.o.cmdheight - 1
-  content = validate_content(content)
+  local validated, is_valid = validate_content(content)
+  content = validated
 
   local height = math.min(#content, max_height)
   title = title ..' ('..#content..')'
@@ -224,10 +228,14 @@ function M.list_window(title, content, options)
       options.on_select(options.buf_id)
     end
 
+    local cmd = is_valid
+      and [[__dep_assist_list_cb()]]
+      or [[require"dependency_assist".close_current_window()<CR>]]
+
     set_mappings(buf, {{
       mode = 'n',
       lhs = '<CR>',
-      rhs = ':lua __dep_assist_list_cb()<CR>',
+      rhs = ':lua '..cmd..'<CR>',
     }})
     register_current({buf = buf, win = win, type = 'list', parent = parent_win})
 
