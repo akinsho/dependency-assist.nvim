@@ -12,9 +12,7 @@ local dependency_block = 'dependencies:'
 --- @param line string
 local function is_matching_pkg(pkg, line)
   if type(pkg.previous) ~= 'string' then return false end
-  -- TODO this doesn't match anything that is quoted
-  local previous = pkg.previous:gsub('"', '\\"')
-  return line:match(pkg.name..': '..helpers.escape_pattern(previous))
+  return line:match(pkg.name..': '..helpers.escape_pattern(pkg.previous))
 end
 
 --- This function determines position of dependencies by searching through
@@ -62,6 +60,7 @@ local function show_dart_versions(buf_id, callback)
     local dependencies = parsed_lines.dependencies or {}
     local dev_dependencies = parsed_lines.dev_dependencies or {}
     local deps = vim.tbl_extend('force', dependencies, dev_dependencies)
+
     report_outdated_packages(deps, lines, callback)
   end
 end
