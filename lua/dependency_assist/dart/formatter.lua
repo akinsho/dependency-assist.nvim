@@ -12,6 +12,7 @@ end
 
 function M.format_package_details(data)
   local result = {}
+  if not data or not data.versions then return result end
   for i = #data.versions, 1, -1 do
     local pkg = data.versions[i]
     table.insert(result, pkg.pubspec.name ..": " .. pkg.version)

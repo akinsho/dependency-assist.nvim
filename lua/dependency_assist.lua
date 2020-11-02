@@ -44,10 +44,12 @@ local function get_package(buf)
   if pkg then
     assistant.api.get_package(pkg, function (data)
       local versions = assistant.formatter.format_package_details(data)
-      ui.list_window(pkg..' versions', versions, {
-          buf_id = buf,
-          on_select = insert_package,
-        })
+      if versions then
+        ui.list_window(pkg..' versions', versions, {
+            buf_id = buf,
+            on_select = insert_package,
+          })
+      end
     end)
   end
 end
