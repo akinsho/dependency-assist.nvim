@@ -117,7 +117,7 @@ local function get_window_config(width, height)
   }
 end
 
-local function register_current_buf(buf)
+local function register_current(buf)
   state.current = buf
   state.is_open = true
 end
@@ -163,7 +163,7 @@ local function bordered_window(win_opts, callback)
 
   local height = #lines
   local config = get_window_config(max_width, height)
-  api.nvim_open_win(buf, false, config)
+  local win = api.nvim_open_win(buf, false, config)
 
   config.row = config.row + 1
   config.height = height - 2
@@ -171,14 +171,14 @@ local function bordered_window(win_opts, callback)
   config.width = config.width - 4
   config.focusable = true
 
-  callback(buf, config)
+  callback(win, buf, config)
 end
 
 --- @param title string
 --- @param options table
 function M.input_window(title, options)
   local border_opts = {title = title, width = MAX_WIDTH, height = 1}
-  bordered_window(border_opts, function(parent_buf, config)
+  bordered_window(border_opts, function(parent_win, parent_buf, config)
     local buf = api.nvim_create_buf(false, true)
     local win = api.nvim_open_win(buf, true, config)
 
@@ -194,7 +194,7 @@ function M.input_window(title, options)
     vim.cmd('startinsert!')
     cleanup_autocommands(parent_buf)
 
-    register_current_buf({buf = buf, win = win, type = 'input'})
+    register_current({buf = buf, win = win, type = 'input', parent = parent_win})
     if options.on_open then options.on_open(win, buf) end
   end)
 end
@@ -213,7 +213,7 @@ function M.list_window(title, content, options)
     return append_to_current(formatted)
   end
 
-  bordered_window(border_opts, function(parent_buf, config)
+  bordered_window(border_opts, function(parent_win, parent_buf, config)
     local buf = api.nvim_create_buf(false, true)
     api.nvim_buf_set_lines(buf, 0, -1, false, formatted)
     local win = api.nvim_open_win(buf, true, config)
@@ -232,7 +232,7 @@ function M.list_window(title, content, options)
       lhs = '<CR>',
       rhs = ':lua __dep_assist_list_cb()<CR>',
     }})
-    register_current_buf({buf = buf, win = win, type = 'list'})
+    register_current({buf = buf, win = win, type = 'list', parent = parent_win})
 
     if options.on_open then options.on_open(win, buf) end
   end)
