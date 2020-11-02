@@ -99,7 +99,7 @@ local function get_window_config(width, height)
     col = col,
     row = row,
     style = 'minimal',
-    focusable = true
+    focusable = false
   }
   return opts
 end
@@ -156,6 +156,7 @@ local function bordered_window(win_opts, callback)
   config.height = height - 2
   config.col = config.col + 2
   config.width = config.width - 4
+  config.focusable = true
 
   callback(win, parent_buf, config)
 end
@@ -165,7 +166,6 @@ end
 function M.input_window(title, options)
   local border_opts = { title = title, width = MAX_WIDTH, height = 1 }
   bordered_window(border_opts, function(_, parent_buf, config)
-    config.focusable = false
     local buf = api.nvim_create_buf(false, true)
     local win = api.nvim_open_win(buf, true, config)
 
