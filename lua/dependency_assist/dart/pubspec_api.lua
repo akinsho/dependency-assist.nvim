@@ -42,13 +42,14 @@ end
 
 function M.check_outdated_packages(deps, cb)
   for name,version in pairs(deps) do
+    if type(version) ~= 'string' then goto continue end
     M.get_package(name, function (data)
       if data and data.latest then
         local latest = data.latest.version
         -- TODO this doesn't match anything that is quoted
         -- the format string works but also breaks non-quoted strings
         -- local previous = string.format("%q", pkg.previous)
-        if version and latest ~= version:gsub('%^', '') then
+        if latest ~= version:gsub('%^', '') then
           cb({
               name = name,
               latest = latest,
@@ -59,6 +60,7 @@ function M.check_outdated_packages(deps, cb)
         -- TODO inform of error
       end
     end)
+    ::continue::
   end
 end
 
