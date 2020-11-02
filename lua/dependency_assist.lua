@@ -77,6 +77,7 @@ end
 --- @param is_dev boolean
 local function dependency_search(is_dev)
   state.is_dev = is_dev
+  ui.set_parent_window(api.nvim_get_current_win())
   local buf = api.nvim_get_current_buf()
   ui.input_window('Enter a package name', {
       buf_id = buf,

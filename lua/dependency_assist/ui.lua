@@ -3,16 +3,19 @@ local helpers = require'dependency_assist/helpers'
 
 local MAX_WIDTH = 50
 
-local M = {
+local M = {}
+
+local state = {
   is_open = false,
   current = nil,
+  enclosing_window = nil,
 }
 
 --- @param search string
 --- @return nil|table
 local function get_current_by_type(search)
-  if not M.current then return nil end
-  return M.current.type == search and M.current or nil
+  if not state.current then return nil end
+  return state.current.type == search and state.current or nil
 end
 
 --- @param parent_buf number
@@ -73,7 +76,9 @@ end
 --- @param max_width number
 local function get_max_width(lines, max_width)
   for _, line in pairs(lines) do
-    if string.len(line) > max_width then max_width = string.len(line) end
+    if string.len(line) > max_width then
+      max_width = string.len(line)
+    end
   end
   return max_width
 end
@@ -81,27 +86,27 @@ end
 --- @param content table
 --- @return nil
 local function append_to_current(content)
-  local b = M.current.buf
+  local b = state.current.buf
   vim.bo[b].modifiable = true
   api.nvim_buf_set_lines(b, 0, -1, false, content)
   vim.bo[b].modifiable = false
 end
 
 function M.close()
-  if M.current and M.is_open then
-    vim.cmd('bw '..M.current.buf)
-    M.current = nil
-    M.is_open = false
+  if state and state.is_open then
+    vim.cmd('bw '..state.current.buf)
+    state.current = nil
+    state.is_open = false
   end
 end
 
 --- @param width integer
 --- @param height integer
 local function get_window_config(width, height)
-  local win_width = vim.fn.winwidth(0)
-  local row = math.floor((vim.o.lines * 0.8 - 3 - height) / 2)
+  local win_width = api.nvim_win_get_width(state.enclosing_window)
+  local row = math.floor((vim.o.lines * 0.5 - vim.o.cmdheight -1) / 2)
   local col = math.floor((win_width - width) / 2)
-  local opts = {
+  return {
     relative = 'win',
     width = width,
     height = height,
@@ -110,12 +115,11 @@ local function get_window_config(width, height)
     style = 'minimal',
     focusable = false
   }
-  return opts
 end
 
 local function register_current_buf(buf)
-  M.current = buf
-  M.is_open = true
+  state.current = buf
+  state.is_open = true
 end
 
 --- @param buf number
@@ -173,7 +177,7 @@ end
 --- @param title string
 --- @param options table
 function M.input_window(title, options)
-  local border_opts = { title = title, width = MAX_WIDTH, height = 1 }
+  local border_opts = {title = title, width = MAX_WIDTH, height = 1}
   bordered_window(border_opts, function(parent_buf, config)
     local buf = api.nvim_create_buf(false, true)
     local win = api.nvim_open_win(buf, true, config)
@@ -232,6 +236,10 @@ function M.list_window(title, content, options)
 
     if options.on_open then options.on_open(win, buf) end
   end)
+end
+
+function M.set_parent_window(id)
+  M.enclosing_window = id
 end
 
 --- @param buf_id number
