@@ -83,15 +83,6 @@ local function get_max_width(lines, max_width)
   return max_width
 end
 
---- @param content table
---- @return nil
-local function append_to_current(content)
-  local b = state.current.buf
-  vim.bo[b].modifiable = true
-  api.nvim_buf_set_lines(b, 0, -1, false, content)
-  vim.bo[b].modifiable = false
-end
-
 function M.close()
   if state and state.is_open then
     vim.cmd('bw '..state.current.buf)
@@ -208,10 +199,6 @@ function M.list_window(title, content, options)
   local height = math.min(#content, max_height)
   local border_opts = {title = title, width = width, height = height}
   local formatted = format_content(content)
-
-  if get_current_by_type('list') then
-    return append_to_current(formatted)
-  end
 
   bordered_window(border_opts, function(parent_win, parent_buf, config)
     local buf = api.nvim_create_buf(false, true)
