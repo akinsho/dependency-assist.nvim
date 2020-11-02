@@ -1,6 +1,8 @@
 local api = vim.api
 local helpers = require'dependency_assist/helpers'
 
+local MAX_WIDTH = 50
+
 local M = {
   is_open = false,
   current_buf = nil,
@@ -25,18 +27,13 @@ local function cleanup_autocommands(parent_buf)
   })
 end
 
-local function pad(line)
-  return " " ..line .. " "
-end
-
-
-function M.get_current_input()
-  local input = vim.fn.trim(vim.fn.getline('.'))
-  M.close()
-  return input
-end
-
 local function set_mappings(buf_id, maps)
+  local close_fn = [[:lua require"dependency_assist".close_current_window()<CR>]]
+  local default_mappings = {
+    { mode = 'n', lhs = '<Esc>', rhs = close_fn },
+    { mode = 'i', lhs = '<Esc>', rhs = '<c-o>'..close_fn }
+  }
+  maps = vim.list_extend(maps, default_mappings)
   for _, map in ipairs(maps) do
     api.nvim_buf_set_keymap(
       buf_id,
@@ -51,18 +48,26 @@ local function set_mappings(buf_id, maps)
   end
 end
 
-local default_mappings = {
-    {
-      mode = 'n',
-      lhs  = '<Esc>',
-      rhs = ':lua require"dependency_assist".close_current_window()<cr>'
-    },
-    {
-      mode = 'i',
-      lhs  = '<Esc>',
-      rhs = '<c-o>:lua require"dependency_assist".close_current_window()<cr>'
-    }
-  }
+--- @param line string
+local function pad(line)
+  return " " ..line .. " "
+end
+
+--- @param content table
+local function format_content(content)
+  local formatted = {}
+  for _, item in ipairs(content) do
+    table.insert(formatted, pad(item))
+  end
+  return formatted
+end
+
+
+function M.get_current_input()
+  local input = vim.fn.trim(vim.fn.getline('.'))
+  M.close()
+  return input
+end
 
 --- @param lines table
 --- @param max_width number
@@ -135,7 +140,7 @@ local function bordered_window(win_opts, callback)
   local bot = "╰" .. bottom_line  .. "╯"
 
   local lines = {top}
-  for _=1,win_opts.height do
+  for _ = 1, win_opts.height do
     table.insert(lines, mid)
   end
   table.insert(lines, bot)
@@ -158,82 +163,63 @@ end
 --- @param title string
 --- @param options table
 function M.input_window(title, options)
-  bordered_window({
-      title = title,
-      width = 40,
-      height = 1,
-    },
-    function(_, parent_buf, config)
-      config.focusable = false
-      local buf = api.nvim_create_buf(false, true)
-      local win = api.nvim_open_win(buf, true, config)
+  local border_opts = { title = title, width = MAX_WIDTH, height = 1 }
+  bordered_window(border_opts, function(_, parent_buf, config)
+    config.focusable = false
+    local buf = api.nvim_create_buf(false, true)
+    local win = api.nvim_open_win(buf, true, config)
 
-      -- TODO once native lua callbacks are allowed in mappings
-      -- remove this global function
-      function _G.__dep_assist_input_cb()
-        options.on_select(options.buf_id)
-      end
+    function _G.__dep_assist_input_cb()
+      options.on_select(options.buf_id)
+    end
 
-      set_mappings(buf, vim.list_extend({
-            {
-              mode = "i",
-              lhs = "<CR>",
-              rhs = "<c-o>:lua __dep_assist_input_cb()<CR>"
-            }
-        }, default_mappings))
-      vim.cmd('startinsert!')
-      cleanup_autocommands(parent_buf)
+    set_mappings(buf, {{
+      mode = "i",
+      lhs = "<CR>",
+      rhs = "<c-o>:lua __dep_assist_input_cb()<CR>"
+    }})
+    vim.cmd('startinsert!')
+    cleanup_autocommands(parent_buf)
 
-      set_current_buf(buf)
-      if options.on_open then options.on_open(win, buf) end
-    end)
+    set_current_buf(buf)
+    if options.on_open then options.on_open(win, buf) end
+  end)
 end
 
 --- @param title string
 --- @param content table
 --- @param options table
 function M.list_window(title, content, options)
-  local max_width = get_max_width(content, 50)
-  local height = math.min(#content, vim.fn.float2nr(vim.o.lines * 0.5) - 3)
-  bordered_window({
-      title = title,
-      width = max_width,
-      height = height,
-    },
-    function(_, parent_buf, config)
-      local formatted = {}
-      for _, item in ipairs(content) do
-        table.insert(formatted, pad(item))
-      end
+  local max_width = get_max_width(content, MAX_WIDTH)
+  local max_height = vim.fn.float2nr(vim.o.lines * 0.5) - vim.o.cmdheight - 1
+  local height = math.min(#content, max_height)
+  local border_opts = {title = title, width = max_width, height = height}
 
-      local buf = api.nvim_create_buf(false, true)
-      api.nvim_buf_set_lines(buf, 0, -1, false, formatted)
+  bordered_window(border_opts, function(_, parent_buf, config)
+    local buf = api.nvim_create_buf(false, true)
+    api.nvim_buf_set_lines(buf, 0, -1, false, format_content(content))
+    local win = api.nvim_open_win(buf, true, config)
 
-      local win = api.nvim_open_win(buf, true, config)
-      api.nvim_buf_set_option(buf, 'modifiable', false)
 
-      vim.wo[win].cursorline = true
-      api.nvim_win_set_option(win, 'winhl', 'CursorLine:TabLineSel')
-      cleanup_autocommands(parent_buf)
+    vim.bo[buf].modifiable = false
+    vim.wo[win].cursorline = true
+    vim.wo[win].winhighlight = 'CursorLine:TabLineSel'
+    cleanup_autocommands(parent_buf)
 
-      -- TODO once native lua callbacks are allowed in mappings
-      -- remove this global function
-      function _G.__dep_assist_list_cb()
-        options.on_select(options.buf_id)
-      end
+    function _G.__dep_assist_list_cb()
+      options.on_select(options.buf_id)
+    end
 
-      set_mappings(buf, vim.list_extend({
-            { mode = 'n',
-              lhs = '<CR>',
-              rhs = ':lua __dep_assist_list_cb()<CR>',
-            },
-          }, default_mappings)
-        )
-      set_current_buf(buf)
+    set_mappings(buf, {{
+      mode = 'n',
+      lhs = '<CR>',
+      rhs = ':lua __dep_assist_list_cb()<CR>',
+    }})
+    set_current_buf(buf)
 
-      if options.on_open then options.on_open(win, buf) end
-    end)
-  end
+    if options.on_open then options.on_open(win, buf) end
+  end)
+end
 
 --- @param buf_id number
 --- @param lnum number
