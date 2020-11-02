@@ -2,6 +2,7 @@ local ui = require 'dependency_assist/ui'
 local assistants = require 'dependency_assist/'
 local h = require 'dependency_assist/helpers'
 
+local api = vim.api
 local M = {}
 
 local state = { is_dev = false }
@@ -76,7 +77,7 @@ end
 --- @param is_dev boolean
 local function dependency_search(is_dev)
   state.is_dev = is_dev
-  local buf = vim.api.nvim_get_current_buf()
+  local buf = api.nvim_get_current_buf()
   ui.input_window('Enter a package name', {
       buf_id = buf,
       on_select = search_package
@@ -97,7 +98,7 @@ end
 
 local function check_is_setup(buf_id)
   local key = 'dependency_assistant_setup'
-  local success, value = pcall(vim.api.nvim_buf_get_var, buf_id, key)
+  local success, value = pcall(api.nvim_buf_get_var, buf_id, key)
   return success and value or false
 end
 
@@ -117,7 +118,7 @@ end
 --- @param preferences table
 local function setup_dependency_file(buf_id, preferences)
   if preferences and preferences.key then
-    vim.api.nvim_buf_set_keymap(buf_id, 'n', preferences.key, ':AddDependency<CR>', {
+    api.nvim_buf_set_keymap(buf_id, 'n', preferences.key, ':AddDependency<CR>', {
         noremap = true,
         silent = true,
       })
@@ -144,7 +145,7 @@ end
 
 --- @param preferences table
 local function setup_ft(preferences)
-  local buf_id = vim.api.nvim_get_current_buf()
+  local buf_id = api.nvim_get_current_buf()
   local already_setup = check_is_setup(buf_id)
   if already_setup then return end
 
@@ -156,7 +157,7 @@ local function setup_ft(preferences)
     setup_dependency_file(buf_id, preferences)
   end
 
-  vim.api.nvim_buf_set_var(buf_id, 'dependency_assistant_setup', true)
+  api.nvim_buf_set_var(buf_id, 'dependency_assistant_setup', true)
 end
 
 --- @param preferences table
