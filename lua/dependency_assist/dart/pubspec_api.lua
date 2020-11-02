@@ -48,7 +48,7 @@ function M.check_outdated_packages(deps, cb)
         -- TODO this doesn't match anything that is quoted
         -- the format string works but also breaks non-quoted strings
         -- local previous = string.format("%q", pkg.previous)
-        if latest ~= version:gsub('%^', '') then
+        if version and latest ~= version:gsub('%^', '') then
           cb({
               name = name,
               latest = latest,
