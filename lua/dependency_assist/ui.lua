@@ -254,7 +254,6 @@ end
 
 function M.get_current_input()
   local input = vim.fn.trim(vim.fn.getline('.'))
-  M.close()
   return input
 end
 

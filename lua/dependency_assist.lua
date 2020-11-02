@@ -56,6 +56,7 @@ end
 local function search_package(buf)
   local assistant = get_assistant(buf)
   local input = ui.get_current_input()
+  ui.close()
   if input:len() > 0 then
     assistant.api.search_package(input, function (data)
       local result = {}
