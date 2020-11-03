@@ -54,7 +54,8 @@ local function set_mappings(buf_id, maps)
 end
 
 local function get_current_input()
-  local input = vim.fn.trim(vim.fn.getline('.'))
+  local buf = api.nvim_get_current_buf()
+  local input = api.nvim_buf_get_lines(buf, 0, -1, false)
   return input
 end
 

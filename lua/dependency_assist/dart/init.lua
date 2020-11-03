@@ -73,9 +73,9 @@ local function show_dart_versions(buf_id, callback)
   report_outdated_packages(deps, lines, callback)
 end
 
---- @param dependency string
+--- @param dependencies table<number, string>
 --- @param is_dev boolean
-local function insert_dependency(dependency, is_dev)
+local function insert_dependencies(dependencies, is_dev)
   local buf_id = vim.api.nvim_get_current_buf()
   local parsed_lines, lines = parse_pubspec(buf_id, false)
   local data = is_dev
@@ -106,7 +106,7 @@ local function insert_dependency(dependency, is_dev)
     if is_match then lnum = idx - 1 end
   end
   if lnum then
-    helpers.insert_beneath(lnum, dependency)
+    helpers.insert_beneath(lnum, dependencies)
   else
     helpers.echomsg("Couldn't find the last inserted dependency")
   end
@@ -128,7 +128,7 @@ local dart = {
   formatter = formatter,
   show_versions = show_dart_versions,
   find_dependency_file = find_pubspec_file,
-  insert_dependency = insert_dependency,
+  insert_dependencies = insert_dependencies,
   extension = extension
 }
 

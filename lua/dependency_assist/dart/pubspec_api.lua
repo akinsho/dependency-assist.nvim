@@ -9,7 +9,7 @@ local api = Api:new({
 
 --- @param cb function
 function M.get_packages(cb)
-  api:get('/packages', function (data)
+  return api:get('/packages', function (data)
     if data then
       cb(data)
     else
@@ -20,8 +20,9 @@ end
 
 --- @param name string
 --- @param cb function
+--- @return integer
 function M.search_package(name, cb)
-  api:get('search?q='..name, function (data)
+  return api:get('search?q='..name, function (data)
     if data then
       cb(data)
     else
@@ -30,14 +31,38 @@ function M.search_package(name, cb)
   end)
 end
 
+function M.search_multiple_packages(packages, cb)
+  local jobs = {}
+  local result = {}
+  for i, pkg in ipairs(packages) do
+    jobs[i] = M.search_package(pkg, function(data)
+      result[pkg] = data
+    end)
+  end
+  vim.fn.jobwait(jobs, 20000)
+  cb(result)
+end
+
 function M.get_package(name, cb)
-  api:get('/packages/'..name, function(data)
+  return api:get('/packages/'..name, function(data)
     if data then
       cb(data)
     else
       helpers.echoerr(name..'not found')
     end
   end)
+end
+
+function M.get_packages(names, cb)
+  local jobs = {}
+  local result = {}
+  for i, name in ipairs(names) do
+    jobs[i] = M.get_package(name, function(data)
+      result[name] = data
+    end)
+  end
+  vim.fn.jobwait(jobs, -1)
+  cb(result)
 end
 
 function M.check_outdated_packages(deps, cb)
