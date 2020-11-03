@@ -106,12 +106,15 @@ end
 
 --- @param buf integer
 --- @param lines table
-local function search_package(buf, lines)
+local function search_packages(buf, lines)
   local assistant = get_assistant(buf)
   ui.close()
   local input = lines[1]
   if input:len() > 0 then
     ui.loading_window()
+    -- force neovim to redraw since using jobwait
+    -- prevents this unless explicitly called
+    vim.cmd('redraw!')
     local packages = parse_input(input)
     if #packages > 0 then
       assistant.api.search_multiple_packages(
@@ -133,7 +136,7 @@ local function dependency_search(is_dev)
   local buf = api.nvim_get_current_buf()
   ui.input_window('Enter a package name', {
       buf_id = buf,
-      on_select = search_package
+      on_select = search_packages
   })
 end
 
