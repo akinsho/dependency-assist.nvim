@@ -229,6 +229,7 @@ function M.loading_window()
           rhs = ':lua require"dependency_assist".close_current_window()<CR>',
       }})
     register_current({buf = buf, win = win, type = 'list', parent = parent_win})
+    vim.cmd('redraw!')
   end)
 end
 
@@ -251,7 +252,8 @@ function M.list_window(title, content, options)
     api.nvim_buf_set_lines(buf, 0, -1, false, formatted)
     local win = api.nvim_open_win(buf, true, config)
 
-    vim.bo[buf].modifiable = false
+    local modifiable = options.modifiable ~= nil and options.modifiable or false
+    vim.bo[buf].modifiable = modifiable
     vim.wo[win].cursorline = true
     vim.wo[win].winhighlight = 'CursorLine:TabLineSel'
     cleanup_autocommands(parent_buf)

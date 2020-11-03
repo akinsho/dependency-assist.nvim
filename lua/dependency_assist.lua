@@ -69,7 +69,8 @@ local function get_latest_versions(buf, packages)
 
     ui.list_window('Confirm packages', all_latest, {
         buf_id = buf,
-        on_select = insert_packages
+        on_select = insert_packages,
+        modifiable = true,
       })
   end)
 end
@@ -114,7 +115,6 @@ local function search_packages(buf, lines)
     ui.loading_window()
     -- force neovim to redraw since using jobwait
     -- prevents this unless explicitly called
-    vim.cmd('redraw!')
     local packages = parse_input(input)
     if #packages > 0 then
       assistant.api.search_multiple_packages(
