@@ -129,8 +129,9 @@ end
 function M.set_highlights()
   vim.cmd(
     string.format(
-    'highlight %s guifg=LightGreen gui=bold,italic',
-    VIRTUAL_TEXT_HIGHLIGHT)
+      'highlight %s guifg=LightGreen gui=bold,italic',
+      VIRTUAL_TEXT_HIGHLIGHT
+    )
   )
 end
 
