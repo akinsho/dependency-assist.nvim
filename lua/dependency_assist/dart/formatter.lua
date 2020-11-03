@@ -3,8 +3,8 @@ local M = {}
 function M.format_packages(content)
   local next_url = content.next_url
   local packages = {}
-  for _,package in ipairs(content.packages) do
-    local str = package.name .. ', version: ' .. package.latest.version
+  for _, pkg in ipairs(content.packages) do
+    local str = pkg.name .. ', version: ' .. pkg.latest.version
     table.insert(packages, str)
   end
   return packages, next_url
