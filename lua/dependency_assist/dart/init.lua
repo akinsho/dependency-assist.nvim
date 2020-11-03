@@ -8,11 +8,13 @@ local dependency_file = 'pubspec.yaml'
 local dev_block = 'devDependencies:'
 local dependency_block = 'dependencies:'
 
---- @param pkg table
+--- @param name string
+--- @param version string
 --- @param line string
-local function is_matching_pkg(pkg, line)
-  if type(pkg.previous) ~= 'string' then return false end
-  return line:match(pkg.name..': '..helpers.escape_pattern(pkg.previous))
+local function is_matching_pkg(name, version, line)
+  if not line or not name or not version then return false end
+  local escaped = helpers.escape_pattern(version)
+  return line:gsub('\"', ''):match(name..': '..escaped)
 end
 
 --- This function determines position of dependencies by searching through
@@ -24,8 +26,9 @@ local function report_outdated_packages(deps, lines, callback)
   if deps and not vim.tbl_isempty(deps) then
     api.check_outdated_packages(deps, function (pkg)
       local lnum
+      local is_string = type(pkg.previous) == 'string'
       for idx, line in ipairs(lines) do
-        if is_matching_pkg(pkg, line) then
+        if is_string and is_matching_pkg(pkg.name, pkg.previous, line) then
           lnum = idx - 1
         end
       end
@@ -34,9 +37,8 @@ local function report_outdated_packages(deps, lines, callback)
   end
 end
 
---- @param buf_id number
---- @param callback function
-local function show_dart_versions(buf_id, callback)
+local function parse_pubspec(buf_id, should_truncate)
+  should_truncate = should_truncate ~= nil and should_truncate or true
   local lines = vim.api.nvim_buf_get_lines(buf_id, 0, -1, false)
   if #lines > 0 then
     local buffer_text = ''
@@ -44,10 +46,11 @@ local function show_dart_versions(buf_id, callback)
     local dependency_section_seen = false
     for _,line in ipairs(lines) do
       -- Filter out all lines that don't relate to our dependencies
+      -- unless we have specified that we should not truncate the lines
       if line:match(dependency_block) or line:match(dev_block) then
         dependency_section_seen = true
       end
-      if line ~= "" and dependency_section_seen then
+      if line ~= "" and (not should_truncate or dependency_section_seen) then
         buffer_text = buffer_text..'\n' .. line
       end
     end
@@ -56,20 +59,57 @@ local function show_dart_versions(buf_id, callback)
     if buffer_text == "" then return end
     local success, parsed_lines = pcall(yaml.eval, buffer_text)
     if not success then return end
-
-    local dependencies = parsed_lines.dependencies or {}
-    local dev_dependencies = parsed_lines.dev_dependencies or {}
-    local deps = vim.tbl_extend('force', dependencies, dev_dependencies)
-
-    report_outdated_packages(deps, lines, callback)
+    return parsed_lines, lines
   end
+end
+
+--- @param buf_id number
+--- @param callback function
+local function show_dart_versions(buf_id, callback)
+  local parsed_lines, lines = parse_pubspec(buf_id)
+  local dependencies = parsed_lines.dependencies or {}
+  local dev_dependencies = parsed_lines.dev_dependencies or {}
+  local deps = vim.tbl_extend('force', dependencies, dev_dependencies)
+  report_outdated_packages(deps, lines, callback)
 end
 
 --- @param dependency string
 --- @param is_dev boolean
 local function insert_dependency(dependency, is_dev)
-  local location = is_dev and dev_block or dependency_block
-  helpers.insert_beneath(location, dependency)
+  local buf_id = vim.api.nvim_get_current_buf()
+  local parsed_lines, lines = parse_pubspec(buf_id, false)
+  local data = is_dev
+    and parsed_lines.dev_dependencies
+    or parsed_lines.dependencies
+  local length = vim.tbl_count(data)
+  local index = 1
+  local last_inserted
+  -- search through our dev or main dependencies and find the last one
+  -- alphabetically. We don't have another way to search since trying
+  -- to use the file structure is brittle and the yaml parser doesn't
+  -- give us back a line number
+  for k,v in pairs(data) do
+    if index == length then
+      last_inserted = {name = k, version = v }
+    end
+    index = index + 1
+  end
+  local lnum
+  -- Try to match the "last inserted" dependency i.e. the alphabetically
+  -- furthest with a line number
+  for idx, line in ipairs(lines) do
+    local is_match = is_matching_pkg(
+      last_inserted.name,
+      last_inserted.version,
+      line
+    )
+    if is_match then lnum = idx - 1 end
+  end
+  if lnum then
+    helpers.insert_beneath(lnum, dependency)
+  else
+    helpers.echomsg("Couldn't find the last inserted dependency")
+  end
 end
 
 --- Find the path of the project's pubspec.yaml

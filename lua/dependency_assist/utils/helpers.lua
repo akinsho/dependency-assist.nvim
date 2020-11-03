@@ -17,20 +17,15 @@ end
 function M.echomsg(msg, hl)
   hl = hl or 'Title'
   vim.cmd('echohl '..hl)
-  vim.cmd(msg)
+  vim.cmd(string.format('echomsg "%s"', msg))
   vim.cmd('echohl clear')
 end
 
---- @param location string
+--- @param lnum string
 --- @param text string
-function M.insert_beneath(location, text)
-  local matches = vim.fn.searchpos(location)
-  if matches[1] == 0 then
-    M.echomsg(string.format([[echomsg "Couldn't find %s"]], location))
-  else
-    -- TODO see appendbufline
-    vim.fn.append(matches[1], text)
-  end
+function M.insert_beneath(lnum, text)
+  -- TODO see appendbufline
+  vim.fn.append(lnum, text)
 end
 
 --- @param error string
@@ -65,14 +60,14 @@ end
 --- @param buf_id number
 --- @param is_root_path function
 function M.find_dependency_file(buf_id, is_root_path)
-  -- Ascend the buffer's path until we find the rootdir.
+  -- Ascend the buffer's path until we find the root directory.
   -- is_root_path is a function which returns bool
   local bufname = vim.api.nvim_buf_get_name(buf_id)
   if vim.fn.filereadable(bufname) == 0 then
     return nil
   end
   local dir = bufname
-  -- Just in case our algo is buggy, don't infinite loop.
+  -- Just in case our algorithm is buggy, don't infinite loop.
   for _ = 1, 100 do
     local did_change
     dir, did_change = dirname(dir)
