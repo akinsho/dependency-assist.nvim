@@ -39,7 +39,7 @@ function M.search_multiple_packages(packages, cb)
       result[pkg] = data
     end)
   end
-  vim.fn.jobwait(jobs, 20000)
+  vim.fn.jobwait(jobs, -1)
   cb(result)
 end
 

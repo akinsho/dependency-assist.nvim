@@ -66,6 +66,7 @@ local function get_latest_versions(buf, packages)
       local versions = assistant.formatter.format_package_details(result)
       table.insert(all_latest, versions[1])
     end
+
     ui.list_window('Confirm packages', all_latest, {
         buf_id = buf,
         on_select = insert_packages
@@ -89,9 +90,11 @@ local function handle_search_results(buf)
           end
         end
         table.insert(selected, match)
-        if #selected > 0 then
-          get_latest_versions(buf, selected)
-        end
+      end
+      if #selected > 0 then
+        return get_latest_versions(buf, selected)
+      else
+        h.echomsg("Sorry I couldn't find any matching search results")
       end
     end
   end
