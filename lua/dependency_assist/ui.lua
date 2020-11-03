@@ -116,6 +116,7 @@ end
 --- @param buf number
 --- @param title string
 local function highlight_title(buf, title)
+  if not title then return end
   local start_col = 4
   api.nvim_buf_add_highlight(
     buf,
@@ -127,19 +128,32 @@ local function highlight_title(buf, title)
   )
 end
 
+--- @param title string
+--- @param width number
+--- @param fallback string
+--- @return string
+local function window_title(title, width, fallback)
+  if not title then return fallback end
+  title = pad(title)
+  local remainder = width - string.len(title)
+  title = title .. string.rep("─", remainder - 2)
+  return title
+end
+
 local function bordered_window(win_opts, callback)
   M.close()
   local buf = api.nvim_create_buf(false, true)
-  local max_width = win_opts.width
-
-  local title = pad(win_opts.title)
-  local remainder = max_width - string.len(title)
-  local padded_title = title .. string.rep("─", remainder - 2)
-  local padding = string.rep(" ", max_width - 2)
+  local padding = string.rep(" ", win_opts.width - 2)
   local content_width = string.len(padding)
   local bottom_line = string.rep("─", content_width)
 
-  local top = "╭" .. padded_title .. "╮"
+  local title = window_title(
+    win_opts.title,
+    win_opts.width,
+    bottom_line
+  )
+
+  local top = "╭" ..    title     .. "╮"
   local mid = "│" ..   padding    .. "│"
   local bot = "╰" .. bottom_line  .. "╯"
 
@@ -153,7 +167,7 @@ local function bordered_window(win_opts, callback)
   highlight_title(buf, win_opts.title)
 
   local height = #lines
-  local config = get_window_config(max_width, height)
+  local config = get_window_config(win_opts.width, height)
   local win = api.nvim_open_win(buf, false, config)
 
   config.row = config.row + 1
@@ -198,6 +212,23 @@ local function validate_content(content)
   else
     return content, true
   end
+end
+
+function M.loading_window()
+  local opts = {height = 1, width = MAX_WIDTH}
+  bordered_window(opts, function(parent_win, parent_buf, config)
+    local buf = api.nvim_create_buf(false, true)
+    api.nvim_buf_set_lines(buf, 0, -1, false, {'loading...'})
+    local win = api.nvim_open_win(buf, true, config)
+    vim.bo[buf].modifiable = false
+    cleanup_autocommands(parent_buf)
+    set_mappings(buf, {{
+          mode = 'n',
+          lhs = '<CR>',
+          rhs = ':lua require"dependency_assist".close_current_window()<CR>',
+      }})
+    register_current({buf = buf, win = win, type = 'list', parent = parent_win})
+  end)
 end
 
 --- @param title string

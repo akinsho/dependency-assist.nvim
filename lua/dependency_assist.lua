@@ -60,6 +60,7 @@ local function search_package(buf)
   local input = ui.get_current_input()
   ui.close()
   if input:len() > 0 then
+    ui.loading_window()
     assistant.api.search_package(input, function (data)
       local result = {}
       if data then
