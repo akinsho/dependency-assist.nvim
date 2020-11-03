@@ -1,6 +1,8 @@
 local api = vim.api
 local helpers = require'dependency_assist/utils/helpers'
 
+local namespace = vim.api.nvim_create_namespace('dependency_assist')
+
 local MAX_WIDTH = 50
 
 local M = {}
@@ -282,8 +284,7 @@ end
 --- @param hl string
 function M.set_virtual_text(buf_id, lnum, text, hl)
   hl = hl or 'Comment'
-  local ns = vim.api.nvim_create_namespace('dependency_assist')
-  vim.api.nvim_buf_set_virtual_text(buf_id, ns, lnum, {{text, hl}}, {})
+  vim.api.nvim_buf_set_virtual_text(buf_id, namespace, lnum, {{text, hl}}, {})
 end
 
 return M
