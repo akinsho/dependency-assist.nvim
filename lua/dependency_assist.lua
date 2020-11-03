@@ -55,9 +55,9 @@ local function get_package(buf, pkg)
 end
 
 --- @param buf integer
-local function search_package(buf)
+--- @param input string
+local function search_package(buf, input)
   local assistant = get_assistant(buf)
-  local input = ui.get_current_input()
   ui.close()
   if input:len() > 0 then
     ui.loading_window()

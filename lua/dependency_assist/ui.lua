@@ -51,6 +51,11 @@ local function set_mappings(buf_id, maps)
   end
 end
 
+local function get_current_input()
+  local input = vim.fn.trim(vim.fn.getline('.'))
+  return input
+end
+
 --- @param line string
 local function pad(line)
   return " " ..line .. " "
@@ -181,7 +186,7 @@ function M.input_window(title, options)
     local win = api.nvim_open_win(buf, true, config)
 
     function _G.__dep_assist_input_cb()
-      options.on_select(options.buf_id)
+      options.on_select(options.buf_id, get_current_input())
     end
 
     set_mappings(buf, {{
@@ -249,7 +254,7 @@ function M.list_window(title, content, options)
     cleanup_autocommands(parent_buf)
 
     function _G.__dep_assist_list_cb()
-      options.on_select(options.buf_id, M.get_current_input())
+      options.on_select(options.buf_id, get_current_input())
     end
 
     local cmd = is_valid
@@ -279,11 +284,6 @@ function M.set_virtual_text(buf_id, lnum, text, hl)
   hl = hl or 'Comment'
   local ns = vim.api.nvim_create_namespace('dependency_assist')
   vim.api.nvim_buf_set_virtual_text(buf_id, ns, lnum, {{text, hl}}, {})
-end
-
-function M.get_current_input()
-  local input = vim.fn.trim(vim.fn.getline('.'))
-  return input
 end
 
 return M
