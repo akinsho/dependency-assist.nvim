@@ -5,7 +5,6 @@ require 'dependency_assist/utils/levenshtein_distance'
 
 local M = {}
 local api = vim.api
-local SIMILARITY_THRESHOLD = 4
 local VIRTUAL_TEXT_HIGHLIGHT = 'DependencyAssistVirtualText'
 
 local state = { is_dev = false }
@@ -28,19 +27,19 @@ local function get_assistant(buf)
   h.assistant_error()
 end
 
-local function insert_package(buf_id, pkg)
+local function insert_packages(buf_id, packages)
   local assistant = get_assistant(buf_id)
   ui.close()
   if not h.is_dependency_file(buf_id, assistant.filename) then
     local filepath = assistant.find_dependency_file(buf_id)
     vim.cmd('e '..filepath)
   end
-  assistant.insert_dependency(pkg, state.is_dev)
+  assistant.insert_dependencies(packages, state.is_dev)
   state.is_dev = nil
 end
 
 --- @param buf integer
-local function get_package(buf, pkg)
+function M.get_package(buf, pkg)
   local assistant = get_assistant(buf)
   if pkg then
     assistant.api.get_package(pkg, function (data)
@@ -48,7 +47,9 @@ local function get_package(buf, pkg)
       if versions then
         ui.list_window(pkg..' versions', versions, {
             buf_id = buf,
-            on_select = insert_package,
+            on_select = function(buf_id, pkg)
+              insert_packages(buf_id, pkg)
+            end
           })
       end
     end)
@@ -56,34 +57,73 @@ local function get_package(buf, pkg)
 end
 
 --- @param buf integer
---- @param input string
-local function search_package(buf, input)
+--- @param packages table
+local function get_latest_versions(buf, packages)
+  local assistant = get_assistant(buf)
+  assistant.api.get_packages(packages, function(data)
+    local all_latest = {}
+    for _, result in pairs(data) do
+      local versions = assistant.formatter.format_package_details(result)
+      table.insert(all_latest, versions[1])
+    end
+
+    ui.list_window('Confirm packages', all_latest, {
+        buf_id = buf,
+        on_select = insert_packages
+      })
+  end)
+end
+
+--- @param buf integer
+local function handle_search_results(buf)
+  return function(data)
+    if data then
+      local selected = {}
+      for input, result in pairs(data) do
+        local match
+        local score
+        for _, pkg in ipairs(result.packages) do
+          local distance = string.levenshtein(input, pkg.package)
+          if score == nil or distance < score then
+            score = distance
+            match = pkg.package
+          end
+        end
+        table.insert(selected, match)
+      end
+      if #selected > 0 then
+        return get_latest_versions(buf, selected)
+      else
+        h.echomsg("Sorry I couldn't find any matching search results")
+      end
+    end
+  end
+end
+
+local function parse_input(input)
+  return vim.split(input, ',' )
+end
+
+--- @param buf integer
+--- @param lines table
+local function search_packages(buf, lines)
   local assistant = get_assistant(buf)
   ui.close()
+  local input = lines[1]
   if input:len() > 0 then
     ui.loading_window()
-    assistant.api.search_package(input, function (data)
-      local result = {}
-      if data then
-        local match
-        for _, pkg in pairs(data.packages) do
-          local distance = string.levenshtein(input, pkg.package)
-          if distance < SIMILARITY_THRESHOLD then
-            match = pkg.package
-            break
-          end
-          table.insert(result, pkg.package)
-        end
-        if match then
-          get_package(buf, match)
-        else
-          ui.list_window('Query: '..input, result, {
-              buf_id = buf,
-              on_select = get_package,
-            })
-        end
-      end
-    end)
+    -- force neovim to redraw since using jobwait
+    -- prevents this unless explicitly called
+    vim.cmd('redraw!')
+    local packages = parse_input(input)
+    if #packages > 0 then
+      assistant.api.search_multiple_packages(
+        packages,
+        handle_search_results(buf)
+      )
+    else
+      h.echomsg('You must enter some packages separated by a ","')
+    end
   end
 end
 
@@ -96,7 +136,7 @@ local function dependency_search(is_dev)
   local buf = api.nvim_get_current_buf()
   ui.input_window('Enter a package name', {
       buf_id = buf,
-      on_select = search_package
+      on_select = search_packages
   })
 end
 
