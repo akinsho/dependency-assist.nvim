@@ -6,6 +6,7 @@ require 'dependency_assist/utils/levenshtein_distance'
 local M = {}
 local api = vim.api
 local SIMILARITY_THRESHOLD = 4
+local VIRTUAL_TEXT_HIGHLIGHT = 'DependencyAssistVirtualText'
 
 local state = { is_dev = false }
 
@@ -121,12 +122,16 @@ function M.show_versions(buf_id)
   local assistant = get_assistant(buf_id)
   assistant.show_versions(buf_id,
     function(lnum, version)
-      ui.set_virtual_text(buf_id, lnum, version, 'DependencyAssistVirtText')
+      ui.set_virtual_text(buf_id, lnum, version, VIRTUAL_TEXT_HIGHLIGHT)
     end)
 end
 
 function M.set_highlights()
-  vim.cmd('highlight DependencyAssistVirtText guifg=LightGreen gui=bold,italic')
+  vim.cmd(
+    string.format(
+    'highlight %s guifg=LightGreen gui=bold,italic',
+    VIRTUAL_TEXT_HIGHLIGHT)
+  )
 end
 
 --- @param buf_id number
