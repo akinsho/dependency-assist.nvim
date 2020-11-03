@@ -1,10 +1,10 @@
 local Api = require'dependency_assist/api'
-local helpers = require'dependency_assist/helpers'
+local helpers = require'dependency_assist/utils/helpers'
 
 local M = {}
 
 local api = Api:new({
-  base_uri = 'https://pub.dartlang.org/api/',
+  base_uri = "https://pub.dartlang.org/api/",
 })
 
 --- @param cb function

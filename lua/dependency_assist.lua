@@ -1,9 +1,11 @@
 local ui = require 'dependency_assist/ui'
 local assistants = require 'dependency_assist/'
-local h = require 'dependency_assist/helpers'
+local h = require 'dependency_assist/utils/helpers'
+require 'dependency_assist/utils/levenshtein_distance'
 
-local api = vim.api
 local M = {}
+local api = vim.api
+local SIMILARITY_THRESHOLD = 4
 
 local state = { is_dev = false }
 
@@ -25,9 +27,8 @@ local function get_assistant(buf)
   h.assistant_error()
 end
 
-local function insert_package(buf_id)
+local function insert_package(buf_id, pkg)
   local assistant = get_assistant(buf_id)
-  local pkg = vim.fn.getline('.')
   ui.close()
   if not h.is_dependency_file(buf_id, assistant.filename) then
     local filepath = assistant.find_dependency_file(buf_id)
@@ -38,9 +39,8 @@ local function insert_package(buf_id)
 end
 
 --- @param buf integer
-local function get_package(buf)
+local function get_package(buf, pkg)
   local assistant = get_assistant(buf)
-  local pkg = vim.fn.trim(vim.fn.getline('.'))
   if pkg then
     assistant.api.get_package(pkg, function (data)
       local versions = assistant.formatter.format_package_details(data)
@@ -64,20 +64,30 @@ local function search_package(buf)
     assistant.api.search_package(input, function (data)
       local result = {}
       if data then
+        local match
         for _, pkg in pairs(data.packages) do
+          local distance = string.levenshtein(input, pkg.package)
+          if distance < SIMILARITY_THRESHOLD then
+            match = pkg.package
+            break
+          end
           table.insert(result, pkg.package)
         end
-        ui.list_window('Query: '..input, result, {
-            buf_id = buf,
-            on_select = get_package,
-          })
+        if match then
+          get_package(buf, match)
+        else
+          ui.list_window('Query: '..input, result, {
+              buf_id = buf,
+              on_select = get_package,
+            })
+        end
       end
     end)
   end
 end
 
 --- 1. start package search by opening an input buffer, which registers
---- a callback once the a selection is made triggering a searck
+--- a callback once a selection is made triggering a search
 --- @param is_dev boolean
 local function dependency_search(is_dev)
   state.is_dev = is_dev

@@ -1,5 +1,5 @@
 local api = vim.api
-local helpers = require'dependency_assist/helpers'
+local helpers = require'dependency_assist/utils/helpers'
 
 local MAX_WIDTH = 50
 
@@ -10,13 +10,6 @@ local state = {
   current = nil,
   enclosing_window = nil,
 }
-
---- @param search string
---- @return nil|table
-local function get_current_by_type(search)
-  if not state.current then return nil end
-  return state.current.type == search and state.current or nil
-end
 
 --- @param parent_buf number
 local function cleanup_autocommands(parent_buf)
@@ -120,8 +113,8 @@ local function highlight_title(buf, title)
   local start_col = 4
   api.nvim_buf_add_highlight(
     buf,
-    -1, -- namespace ID (unnecessary)
-    'Title', -- Higlight group
+    -1, -- Namespace ID (unnecessary)
+    'Title', -- Highlight group
     0, -- line number
     start_col, -- start
     start_col + title:len() -- end
@@ -256,7 +249,7 @@ function M.list_window(title, content, options)
     cleanup_autocommands(parent_buf)
 
     function _G.__dep_assist_list_cb()
-      options.on_select(options.buf_id)
+      options.on_select(options.buf_id, M.get_current_input())
     end
 
     local cmd = is_valid

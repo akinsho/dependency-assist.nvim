@@ -1,7 +1,7 @@
 local yaml = require 'dependency_assist/yaml'
 local api = require 'dependency_assist/dart/pubspec_api'
 local formatter = require 'dependency_assist/dart/formatter'
-local helpers = require 'dependency_assist/helpers'
+local helpers = require 'dependency_assist/utils/helpers'
 
 local extension = 'dart'
 local dependency_file = 'pubspec.yaml'
