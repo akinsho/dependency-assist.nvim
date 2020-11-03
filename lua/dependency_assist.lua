@@ -120,6 +120,8 @@ end
 
 function M.show_versions(buf_id)
   local assistant = get_assistant(buf_id)
+  -- clear existing virtual text before adding new versions
+  ui.clear_virtual_text(buf_id)
   assistant.show_versions(buf_id,
     function(lnum, version)
       ui.set_virtual_text(buf_id, lnum, version, VIRTUAL_TEXT_HIGHLIGHT)

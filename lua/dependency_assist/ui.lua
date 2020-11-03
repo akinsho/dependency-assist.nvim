@@ -279,6 +279,11 @@ function M.set_parent_window(id)
 end
 
 --- @param buf_id number
+function M.clear_virtual_text(buf_id)
+  api.nvim_buf_clear_namespace(buf_id, namespace, 0, -1)
+end
+
+--- @param buf_id number
 --- @param lnum number
 --- @param text string
 --- @param hl string
