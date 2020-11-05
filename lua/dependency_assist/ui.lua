@@ -129,16 +129,67 @@ local function highlight_title(buf, title)
   )
 end
 
---- @param title string
+--- @param item string
 --- @param width number
 --- @param fallback string
+--- @param char string
 --- @return string
-local function window_title(title, width, fallback)
-  if not title then return fallback end
-  title = pad(title)
-  local remainder = width - string.len(title)
-  title = title .. string.rep("─", remainder - 2)
-  return title
+local function with_spacing(item, width, char, fallback)
+  if not item then return fallback end
+  item = pad(item)
+  local remainder = width - string.len(item)
+  item = item .. string.rep(char, remainder - 2)
+  return item
+end
+
+--- @param item string
+--- @param position string 'mid' | 'bottom' | 'top'
+local function add_border(item, position)
+  if position == 'top' then
+    return "╭"..item.."╮"
+  elseif position == 'mid' then
+    return "│"..item.."│"
+  elseif position == 'bottom' then
+    return "╰"..item.."╯"
+  end
+end
+
+--- @param subtitle table
+--- @param width number
+--- @param content_width number
+local function add_subtitle(subtitle, width, content_width)
+  local lines = {}
+  local has_subtitle = subtitle and #subtitle > 0
+  if has_subtitle then
+    local divider = string.rep("─", content_width)
+    table.insert(lines, add_border(divider, 'mid'))
+    for _, item in ipairs(subtitle) do
+      if #item > content_width then
+        local msg = 'The subtitle is too long: %s'
+        helpers.echoerr(msg:format(item))
+      else
+        local content = with_spacing(item, width, ' ')
+        table.insert(lines, add_border(content, 'mid'))
+      end
+    end
+  end
+  return lines
+end
+
+--- @param config table
+--- @param suffix number
+local function get_child_config(config, height, suffix)
+  local height_offset = height - 2
+  height_offset = suffix > 0
+  and height_offset - suffix
+  or height_offset
+
+  config.row = config.row + 1
+  config.height = height_offset
+  config.col = config.col + 2
+  config.width = config.width - 4
+  config.focusable = true
+  return config
 end
 
 local function bordered_window(win_opts, callback)
@@ -148,20 +199,27 @@ local function bordered_window(win_opts, callback)
   local content_width = string.len(padding)
   local bottom_line = string.rep("─", content_width)
 
-  local title = window_title(
+  local title = with_spacing(
     win_opts.title,
     win_opts.width,
+    "─",
     bottom_line
   )
 
-  local top = "╭" ..    title     .. "╮"
-  local mid = "│" ..   padding    .. "│"
-  local bot = "╰" .. bottom_line  .. "╯"
+  local top = add_border(title, 'top')
+  local mid = add_border(padding, 'mid')
+  local bot = add_border(bottom_line, 'bottom')
 
   local lines = {top}
   for _ = 1, win_opts.height do
     table.insert(lines, mid)
   end
+  local subtitle = add_subtitle(
+    win_opts.subtitle,
+    win_opts.width,
+    content_width
+  )
+  vim.list_extend(lines, subtitle)
   table.insert(lines, bot)
 
   api.nvim_buf_set_lines(buf, 0, -1, false, lines)
@@ -171,19 +229,20 @@ local function bordered_window(win_opts, callback)
   local config = get_window_config(win_opts.width, height)
   local win = api.nvim_open_win(buf, false, config)
 
-  config.row = config.row + 1
-  config.height = height - 2
-  config.col = config.col + 2
-  config.width = config.width - 4
-  config.focusable = true
+  local child_config = get_child_config(config, height, #subtitle)
 
-  callback(win, buf, config)
+  callback(win, buf, child_config)
 end
 
 --- @param title string
 --- @param options table
 function M.input_window(title, options)
-  local border_opts = {title = title, width = MAX_WIDTH, height = 1}
+  local border_opts = {
+    title = title,
+    width = MAX_WIDTH,
+    height = 1,
+    subtitle = options.subtitle,
+  }
   bordered_window(border_opts, function(parent_win, parent_buf, config)
     local buf = api.nvim_create_buf(false, true)
     local win = api.nvim_open_win(buf, true, config)
@@ -244,7 +303,12 @@ function M.list_window(title, content, options)
 
   local height = math.min(#content, max_height)
   title = title ..' ('..#content..')'
-  local border_opts = {title = title, width = width, height = height}
+  local border_opts = {
+    title = title,
+    width = width,
+    height = height,
+    subtitle = options.subtitle,
+  }
   local formatted = format_content(content)
 
   bordered_window(border_opts, function(parent_win, parent_buf, config)

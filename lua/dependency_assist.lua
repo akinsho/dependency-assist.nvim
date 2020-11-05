@@ -71,6 +71,10 @@ local function get_latest_versions(buf, packages)
         buf_id = buf,
         on_select = insert_packages,
         modifiable = true,
+        subtitle = {
+          "You can delete anything you don't want anymore",
+          "using 'dd'",
+        }
       })
   end)
 end
@@ -135,6 +139,10 @@ local function dependency_search(is_dev)
   ui.set_parent_window(api.nvim_get_current_win())
   local buf = api.nvim_get_current_buf()
   ui.input_window('Enter a package name', {
+      subtitle = {
+        'packages should be separated by a comma',
+        'e.g. logger,flutter-svg',
+      },
       buf_id = buf,
       on_select = search_packages
   })
