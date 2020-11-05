@@ -14,15 +14,19 @@ end
 --- @return number | 'the job id'
 function Api:get(path, cb)
   return vim.fn.jobstart(
-    string.format('curl -X GET "%s" -H %s', self.base_uri .. path, '"Content-Type: application/json"'),
+    string.format(
+      'curl -X GET "%s" -H %s',
+      self.base_uri .. path,
+      '"Content-Type: application/json"'
+    ),
     {
       stdout_buffered = true,
-      on_stdout =
-      function(_, d, _)
+      on_stdout = function(_, d, _)
         local json = vim.fn.json_decode(table.concat(d))
         cb(json)
-      end,
-    })
+      end
+    }
+  )
 end
 
 return Api

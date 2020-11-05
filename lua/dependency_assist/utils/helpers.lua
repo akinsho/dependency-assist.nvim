@@ -1,24 +1,29 @@
 local M = {}
 
 function M.create_cmd(cmd_name, cmd_type, func_name)
-  vim.cmd('command! -'..cmd_type..' '..cmd_name..' lua require"dependency_assist".'..func_name..'()')
+  vim.cmd(
+    "command! -" ..
+      cmd_type ..
+        " " ..
+          cmd_name .. ' lua require"dependency_assist".' .. func_name .. "()"
+  )
 end
 
 --- @param ft string
 function M.assist_error(ft)
-  local cmd = ft  == ''
-    and "Dependency couldn't get the correct filetype"
-    or 'Dependency assist does not support '..ft
+  local cmd =
+    ft == "" and "Dependency couldn't get the correct filetype" or
+    "Dependency assist does not support " .. ft
   M.echoerr(cmd)
 end
 
 --- @param msg string
 --- @param hl string
 function M.echomsg(msg, hl)
-  hl = hl or 'Title'
-  vim.cmd('echohl '..hl)
+  hl = hl or "Title"
+  vim.cmd("echohl " .. hl)
   vim.cmd(string.format('echomsg "%s"', msg))
-  vim.cmd('echohl clear')
+  vim.cmd("echohl clear")
 end
 
 --- @param lnum string
@@ -36,7 +41,7 @@ end
 --- @param buf_id integer
 --- @param filename string
 function M.is_dependency_file(buf_id, filename)
-  local fname = vim.fn.expand('#'..buf_id..':t')
+  local fname = vim.fn.expand("#" .. buf_id .. ":t")
   return fname == filename
 end
 
@@ -46,10 +51,14 @@ local path_sep = vim.loop.os_uname().sysname == "Windows" and "\\" or "/"
 --- @param filepath string
 local function dirname(filepath)
   local is_changed = false
-  local result = filepath:gsub(path_sep.."([^"..path_sep.."]+)$", function()
-    is_changed = true
-    return ""
-  end)
+  local result =
+    filepath:gsub(
+    path_sep .. "([^" .. path_sep .. "]+)$",
+    function()
+      is_changed = true
+      return ""
+    end
+  )
   return result, is_changed
 end
 
@@ -84,13 +93,13 @@ end
 --- @param definitions table
 function M.create_augroups(definitions)
   for group_name, definition in pairs(definitions) do
-    vim.cmd('augroup '..group_name)
-    vim.cmd('autocmd!')
+    vim.cmd("augroup " .. group_name)
+    vim.cmd("autocmd!")
     for _, def in ipairs(definition) do
-      local command = table.concat(vim.tbl_flatten{'autocmd', def}, ' ')
+      local command = table.concat(vim.tbl_flatten {"autocmd", def}, " ")
       vim.cmd(command)
     end
-    vim.cmd('augroup END')
+    vim.cmd("augroup END")
   end
 end
 
