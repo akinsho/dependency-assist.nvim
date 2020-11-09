@@ -157,10 +157,7 @@ local function dependency_search(is_dev)
   ui.input_window(
     "Enter a package name",
     {
-      subtitle = {
-        "packages should be separated by a comma",
-        "e.g. logger,flutter-svg"
-      },
+      subtitle = {"Packages should be separated by a comma"},
       buf_id = buf,
       on_select = search_packages
     }

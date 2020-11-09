@@ -2,8 +2,8 @@ local M = {}
 
 function M.create_cmd(cmd_name, cmd_type, func_name)
   vim.cmd(
-    "command! -" ..
-      cmd_type ..
+    "command! " ..
+      (cmd_type and "-" .. cmd_type or "") ..
         " " ..
           cmd_name .. ' lua require"dependency_assist".' .. func_name .. "()"
   )
@@ -29,7 +29,7 @@ end
 --- @param lnum string
 --- @param text string
 function M.insert_beneath(lnum, text)
-  -- TODO see appendbufline
+  -- TODO see appendbufline()
   vim.fn.append(lnum, text)
 end
 
