@@ -16,7 +16,7 @@ are up to date and add new ones to your dependency file.
 
 ## ⚠ NOTE
 
-This plugin is **Very WIP**.
+This plugin is **WIP**.
 
 ## Usage
 
@@ -38,15 +38,11 @@ module for the language you use, open an issue.
 
 ## TODO
 
-#### General
-
-- [ ] Improve error handling
-
 #### Dart
 
 - [x] Parse `pubspec.yaml` and show versions using virtual text
 - [x] insert specifically into `devDependencies` or standard dependencies
-- [ ] search for multiple packages
+- [x] search for multiple packages
 
 #### Rust
 
