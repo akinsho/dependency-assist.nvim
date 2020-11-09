@@ -186,9 +186,14 @@ function M.show_versions(buf_id)
   local assistant = get_assistant(buf_id)
   -- clear existing virtual text before adding new versions
   ui.clear_virtual_text(buf_id)
+  api.nvim_buf_set_var(buf_id, "dependency_versions", {})
   assistant.show_versions(
     buf_id,
     function(lnum, version)
+      -- setup the buffer variable the first time we open this file
+      local versions = api.nvim_buf_get_var(buf_id, "dependency_versions")
+      versions[tostring(lnum)] = version
+      api.nvim_buf_set_var(buf_id, "dependency_versions", versions)
       ui.set_virtual_text(buf_id, lnum, version, VIRTUAL_TEXT_HIGHLIGHT)
     end
   )
@@ -218,6 +223,8 @@ local function setup_dependency_file(buf_id, preferences)
       }
     )
   end
+
+  h.create_cmd("UpdateDependencyLine", "buffer", "upgrade_current_package")
 
   M.show_versions(buf_id)
 
@@ -287,6 +294,19 @@ function M.setup(preferences)
       }
     }
   )
+end
+
+function M.upgrade_current_package()
+  local line_nr = vim.fn.line(".")
+  local line = vim.fn.getline(".")
+  local versions = vim.b.dependency_versions
+  if versions then
+    local latest = versions[tostring(line_nr - 1)]
+    if latest then
+      local new = vim.fn.substitute(line, [[\zs[0-9\.\*]\+\ze]], latest, "")
+      vim.fn.setline(line_nr, new)
+    end
+  end
 end
 
 M.close_current_window = ui.close
