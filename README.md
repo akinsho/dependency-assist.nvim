@@ -16,7 +16,7 @@ are up to date and add new ones to your dependency file.
 
 ## ⚠ NOTE
 
-status: **WIP**.
+status: 😅
 
 ## Requirements
 
