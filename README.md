@@ -16,17 +16,44 @@ are up to date and add new ones to your dependency file.
 
 ## ⚠ NOTE
 
-This plugin is **WIP**.
+status: **WIP**.
+
+## Requirements
+
+- **Nightly Neovim**
+
+## Installation
+
+```
+Plug 'akinsho/dependency-assist.nvim'
+```
+
+Then in your `init.vim` somewhere after loading the plugin call
+
+```vim
+lua << EOF
+  require'dependency_assist'.setup{}
+EOF
+```
 
 ## Usage
 
+### `AddDependency/AddDevDependency`
+
+These commands are buffer specific and only added within a supported file. For now this is any `dart` file or a `pubspec.yaml`.
+
 This plugin works by showing you the current version of a dependency _if_ it differs from the version you have.
 
-It also provides `AddDependency` and `AddDevDependency` commands. These commands open an input buffer which on hitting
-`Enter` is used to search `pub.dev` for matching packages.
+It also provides `AddDependency` and `AddDevDependency` commands within a supported filetype.
+These commands open an input buffer which on hitting `Enter` is used to search `pub.dev` for matching packages.
 
 It then returns a list of matches and on selecting them they will be added to your `devDependencies` or your `dependencies`
 depending on what you selected.
+
+### `UpdateDependencyLine`
+
+Whilst inside a dependency file (`pubspec.yaml` for now) whilst on a line where there is a new version
+available `UpdateDependencyLine` will swap the current version for the latest.
 
 ## Goals
 
@@ -36,14 +63,13 @@ much work but I haven't tested this out by integrating another example yet.
 This won't scale to all languages, and tbh I'm going to focus my energy on languages I use. If you are interested in contributing a
 module for the language you use, open an issue.
 
-## TODO
-
-#### Dart
+### Dart
 
 - [x] Parse `pubspec.yaml` and show versions using virtual text
 - [x] insert specifically into `devDependencies` or standard dependencies
 - [x] search for multiple packages
+- [ ] review dependency versions
 
-#### Rust
+### Rust
 
 - [ ] Implement `formatter`, `api` etc. (aka _everything_)
