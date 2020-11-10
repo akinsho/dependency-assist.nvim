@@ -8,6 +8,13 @@ local dependency_file = "pubspec.yaml"
 local dev_block = "devDependencies:"
 local dependency_block = "dependencies:"
 
+local dart = {
+  api = api,
+  extension = extension,
+  formatter = formatter,
+  filename = dependency_file
+}
+
 --- @param name string
 --- @param version string
 --- @param line string
@@ -76,17 +83,17 @@ end
 
 --- @param buf_id number
 --- @param callback function
-local function show_dart_versions(buf_id, callback)
-  local parsed_lines, lines = parse_pubspec(buf_id)
-  local dependencies = parsed_lines.dependencies or {}
-  local dev_dependencies = parsed_lines.dev_dependencies or {}
+function dart.show_versions(buf_id, callback)
+  local output, lines = parse_pubspec(buf_id)
+  local dependencies = output and output.dependencies or {}
+  local dev_dependencies = output and output.dev_dependencies or {}
   local deps = vim.tbl_extend("force", dependencies, dev_dependencies)
   report_outdated_packages(deps, lines, callback)
 end
 
 --- @param dependencies table<number, string>
 --- @param is_dev boolean
-local function insert_dependencies(dependencies, is_dev)
+function dart.insert_dependencies(dependencies, is_dev)
   local buf_id = vim.api.nvim_get_current_buf()
   local parsed_lines, lines = parse_pubspec(buf_id, false)
   local data =
@@ -123,7 +130,7 @@ end
 
 --- Find the path of the project's pubspec.yaml
 --- @param buf_id number
-local function find_pubspec_file(buf_id)
+function dart.find_dependency_file(buf_id)
   local dirname =
     helpers.find_dependency_file(
     buf_id,
@@ -133,15 +140,5 @@ local function find_pubspec_file(buf_id)
   )
   return helpers.path_join(dirname, dependency_file)
 end
-
-local dart = {
-  api = api,
-  filename = dependency_file,
-  formatter = formatter,
-  show_versions = show_dart_versions,
-  find_dependency_file = find_pubspec_file,
-  insert_dependencies = insert_dependencies,
-  extension = extension
-}
 
 return dart

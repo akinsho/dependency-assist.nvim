@@ -297,14 +297,14 @@ function M.setup(preferences)
 end
 
 function M.upgrade_current_package()
-  local line_nr = vim.fn.line(".")
+  local lnum = vim.fn.line(".")
   local line = vim.fn.getline(".")
   local versions = vim.b.dependency_versions
+  local assistant = get_assistant(api.nvim_get_current_buf())
   if versions then
-    local latest = versions[tostring(line_nr - 1)]
+    local latest = versions[tostring(lnum - 1)]
     if latest then
-      local new = vim.fn.substitute(line, [[\zs[0-9\.\*]\+\ze]], latest, "")
-      vim.fn.setline(line_nr, new)
+      vim.fn.setline(lnum, assistant.formatter.update_version(line, latest))
     end
   end
 end
