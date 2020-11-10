@@ -25,8 +25,8 @@ This plugin works by showing you the current version of a dependency _if_ it dif
 It also provides `AddDependency` and `AddDevDependency` commands. These commands open an input buffer which on hitting
 `Enter` is used to search `pub.dev` for matching packages.
 
-It then returns a list of matches and on selecting one it will open a list of versions.
-Once you select one, it will be added to your `devDependencies` or your `dependencies` depending on what you selected.
+It then returns a list of matches and on selecting them they will be added to your `devDependencies` or your `dependencies`
+depending on what you selected.
 
 ## Goals
 
