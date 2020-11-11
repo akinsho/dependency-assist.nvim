@@ -109,4 +109,17 @@ function M.escape_pattern(text)
   return text:gsub("([^%w])", "%%%1")
 end
 
+---@param buf_id number
+---@param dependency_file string
+function M.find(buf_id, dependency_file)
+  local dir =
+    M.find_dependency_file(
+    buf_id,
+    function(dir)
+      return vim.fn.filereadable(M.path_join(dir, dependency_file)) == 1
+    end
+  )
+  return M.path_join(dir, dependency_file)
+end
+
 return M

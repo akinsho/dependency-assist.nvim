@@ -1,0 +1,15 @@
+[package]
+  name = "test-dep-assist"
+  version = "0.1.0"
+  authors = []
+  edition = "2018"
+
+[dependencies]
+  rocket = "0.4.4"
+  serde = { version = "1.0.106", features = ["derive"] }
+  rocket_cors = "0.5.1"
+  dotenv = "0.15.0"
+  diesel = { version = "1.4.4", features = ["chrono", "uuidv07"] }
+  rust-argon2 = "0.8.2"
+  rand = "0.7.3"
+  libstripe = "0.5.9"
