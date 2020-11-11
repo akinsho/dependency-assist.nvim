@@ -75,4 +75,5 @@ module for the language you use, open an issue.
 
 ### Rust
 
-- [ ] Implement `formatter`, `api` etc. (aka _everything_)
+- [ ] Implement version update per line
+- [ ] Handle version virtual text for different package formats
