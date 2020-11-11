@@ -1,7 +1,6 @@
 local ui = require "dependency_assist/ui"
 local assistants = require "dependency_assist/"
 local h = require "dependency_assist/utils/helpers"
-require "dependency_assist/utils/levenshtein_distance"
 
 local M = {}
 local api = vim.api
@@ -69,18 +68,12 @@ end
 --- @param packages table
 local function get_latest_versions(buf, packages)
   local assistant = get_assistant(buf)
-  assistant.api.get_packages(
+  assistant.get_packages(
     packages,
-    function(data)
-      local all_latest = {}
-      for _, result in pairs(data) do
-        local versions = assistant.formatter.format_package_details(result)
-        table.insert(all_latest, versions[1])
-      end
-
+    function(versions)
       ui.list_window(
         "Confirm packages",
-        all_latest,
+        versions,
         {
           buf_id = buf,
           on_select = insert_packages,
@@ -98,20 +91,9 @@ end
 --- @param buf integer
 local function handle_search_results(buf)
   return function(data)
+    local assistant = get_assistant(buf)
     if data then
-      local selected = {}
-      for input, result in pairs(data) do
-        local match
-        local score
-        for _, pkg in ipairs(result.packages) do
-          local distance = string.levenshtein(input, pkg.package)
-          if score == nil or distance < score then
-            score = distance
-            match = pkg.package
-          end
-        end
-        table.insert(selected, match)
-      end
+      local selected = assistant.process_search_results(data)
       if #selected > 0 then
         return get_latest_versions(buf, selected)
       else

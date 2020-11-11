@@ -131,14 +131,40 @@ end
 --- Find the path of the project's pubspec.yaml
 --- @param buf_id number
 function dart.find_dependency_file(buf_id)
-  local dirname =
-    helpers.find_dependency_file(
-    buf_id,
-    function(dir)
-      return vim.fn.filereadable(helpers.path_join(dir, dependency_file)) == 1
+  return helpers.find(buf_id, dependency_file)
+end
+
+function dart.process_search_results(results)
+  local selected = {}
+  for input, result in pairs(results) do
+    local match
+    local score
+    for _, pkg in ipairs(result.packages) do
+      local distance = string.levenshtein(input, pkg.package)
+      if score == nil or distance < score then
+        score = distance
+        match = pkg.package
+      end
+    end
+    if match then
+      table.insert(selected, match)
+    end
+  end
+  return selected
+end
+
+function dart.get_packages(packages, callback)
+  api.get_packages(
+    packages,
+    function(data)
+      local all_latest = {}
+      for _, result in pairs(data) do
+        local versions = formatter.format_package_details(result)
+        table.insert(all_latest, versions[1])
+      end
+      callback(all_latest)
     end
   )
-  return helpers.path_join(dirname, dependency_file)
 end
 
 return dart
