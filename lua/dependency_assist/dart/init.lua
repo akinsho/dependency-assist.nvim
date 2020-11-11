@@ -146,9 +146,11 @@ function dart.process_search_results(results)
         match = pkg.package
       end
     end
-    table.insert(selected, match)
-    return selected
+    if match then
+      table.insert(selected, match)
+    end
   end
+  return selected
 end
 
 function dart.get_packages(packages, callback)
