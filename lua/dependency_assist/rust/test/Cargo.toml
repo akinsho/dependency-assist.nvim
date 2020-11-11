@@ -4,6 +4,7 @@
   authors = []
   edition = "2018"
 
+# this is a comment inside my cargo toml
 [dependencies]
   rocket = "0.4.4"
   serde = { version = "1.0.106", features = ["derive"] }

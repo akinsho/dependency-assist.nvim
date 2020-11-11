@@ -85,12 +85,7 @@ function M.check_outdated_packages(deps, cb)
     if type(version) ~= "string" then
       goto continue
     end
-    M.get_package(
-      name,
-      function(data)
-        print("data:" .. vim.inspect(data))
-      end
-    )
+    M.get_package(name, cb)
     ::continue::
   end
 end

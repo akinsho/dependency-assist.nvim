@@ -1,10 +1,11 @@
 local api = require "dependency_assist/rust/crates_api"
 local formatter = require "dependency_assist/rust/formatter"
 local helpers = require "dependency_assist/utils/helpers"
+local TOML = require "dependency_assist/toml"
 
 local extension = "rs"
 local dependency_file = "Cargo.toml"
-local dev_block = "[dev_dependencies]"
+local dev_block = "[dev-dependencies]"
 local dependency_block = "[dependencies]"
 
 local rust = {
@@ -38,8 +39,38 @@ function rust.insert_dependencies(dependencies, is_dev)
   vim.fn.append(lnum, dependencies)
 end
 
+--- @param dependencies table
+--- @param lines table
+--- @param callback function
+local function report_outdated_packages(dependencies, lines, callback)
+  if dependencies and not vim.tbl_isempty(dependencies) then
+    api.check_outdated_packages(
+      dependencies,
+      function(pkg)
+        local version = pkg.crate.newest_version
+        local name = pkg.crate.name
+        for lnum, line in ipairs(lines) do
+          if line:match(name) then
+            callback(lnum, version)
+          end
+        end
+      end
+    )
+  end
+end
+
 function rust.show_versions(buf_id, callback)
-  -- TODO parse dependency_file and get the dependencies
+  local lines = vim.api.nvim_buf_get_lines(buf_id, 0, -1, false)
+  local output = TOML.parse(table.concat(lines, "\n"))
+  local dependencies = output and output.dependencies or {}
+  local dev_dependencies = output and output.dev_dependencies or {}
+  local deps = vim.tbl_extend("force", dependencies, dev_dependencies)
+  for k, v in pairs(deps) do
+    if type(v) == "table" then
+      deps[k] = v.version
+    end
+  end
+  report_outdated_packages(deps, lines, callback)
 end
 
 function rust.process_search_results(results)

@@ -14,10 +14,6 @@ are up to date and add new ones to your dependency file.
 
 <img alt="dependency assist virtual text" src="./.github/dependencies_virt_text.png" height="300px">
 
-## ⚠ NOTE
-
-status: 😅
-
 ## Requirements
 
 - **Nightly Neovim**
