@@ -75,5 +75,5 @@ module for the language you use, open an issue.
 
 ### Rust
 
-- [ ] Implement version update per line
+- [x] Implement version update per line
 - [ ] Handle version virtual text for different package formats
