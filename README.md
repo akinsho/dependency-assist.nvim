@@ -66,12 +66,16 @@ much work but I haven't tested this out by integrating another example yet.
 This won't scale to all languages, and tbh I'm going to focus my energy on languages I use. If you are interested in contributing a
 module for the language you use, open an issue.
 
+### General
+
+- [ ] Review dependency versions
+- [ ] Clear dependency on update complete
+
 ### Dart
 
 - [x] Parse `pubspec.yaml` and show versions using virtual text
 - [x] insert specifically into `devDependencies` or standard dependencies
 - [x] search for multiple packages
-- [ ] review dependency versions
 
 ### Rust
 
