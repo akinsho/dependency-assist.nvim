@@ -10,7 +10,7 @@ function M.create_cmd(cmd_name, cmd_type, func_name)
 end
 
 --- @param ft string
-function M.assist_error(ft)
+function M.assistant_error(ft)
   local cmd =
     ft == "" and "Dependency couldn't get the correct filetype" or
     "Dependency assist does not support " .. ft
