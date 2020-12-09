@@ -168,14 +168,19 @@ function M.show_versions(buf_id)
   local assistant = get_assistant(buf_id)
   -- clear existing virtual text before adding new versions
   ui.clear_virtual_text(buf_id)
-  vim.b.dependency_versions = {}
+  api.nvim_buf_set_var(buf_id, "dependency_versions", {})
   assistant.show_versions(
     buf_id,
     function(lnum, version)
       -- setup the buffer variable the first time we open this file
-      local versions = vim.b.dependency_versions
+      -- NOTE: confusingly dependency versions can somehow be nil
+      -- at this point. If it is reset it to a table
+      print(
+        "version:" .. vim.inspect(version) .. ", lnum:" .. vim.inspect(lnum)
+      )
+      local versions = api.nvim_buf_get_var(buf_id, "dependency_versions")
       versions[tostring(lnum)] = version
-      vim.b.dependency_versions = versions
+      api.nvim_buf_set_var(buf_id, "dependency_versions", versions)
       ui.set_virtual_text(buf_id, lnum, version, VIRTUAL_TEXT_HIGHLIGHT)
     end
   )
@@ -282,11 +287,19 @@ function M.upgrade_current_package()
   local lnum = vim.fn.line(".")
   local line = vim.fn.getline(".")
   local versions = vim.b.dependency_versions
-  local assistant = get_assistant(api.nvim_get_current_buf())
+  local buf_id = api.nvim_get_current_buf()
+  local assistant = get_assistant(buf_id)
   if versions then
-    local latest = versions[tostring(lnum - 1)]
+    local key = tostring(lnum - 1)
+    local latest = versions[key]
     if latest then
-      vim.fn.setline(lnum, assistant.formatter.update_version(line, latest))
+      local new_line = assistant.formatter.update_version(line, latest)
+      if new_line then
+        vim.fn.setline(lnum, new_line)
+        M.show_versions(buf_id)
+      else
+        h.echomsg("Unable to update package!")
+      end
     end
   end
 end
