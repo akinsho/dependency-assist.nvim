@@ -103,6 +103,22 @@ function M.create_augroups(definitions)
   end
 end
 
+function M.any(comparator, ...)
+  local match = false
+  for i = 1, select("#", ...) do
+    local value = select(i, ...)
+    match = comparator(value)
+    if match then
+      break
+    end
+  end
+  return match
+end
+
+function M.is_empty(item)
+  return not item or item == ""
+end
+
 --- escape any special non alphanumeric characters in a string
 --- @param text string
 function M.escape_pattern(text)

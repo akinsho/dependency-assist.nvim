@@ -19,7 +19,7 @@ local dart = {
 --- @param version string
 --- @param line string
 local function is_matching_pkg(name, version, line)
-  if not line or not name or not version then
+  if helpers.any(helpers.is_empty, line, name, version) then
     return false
   end
   local escaped = helpers.escape_pattern(version)
