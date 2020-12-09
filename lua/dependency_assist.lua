@@ -175,9 +175,6 @@ function M.show_versions(buf_id)
       -- setup the buffer variable the first time we open this file
       -- NOTE: confusingly dependency versions can somehow be nil
       -- at this point. If it is reset it to a table
-      print(
-        "version:" .. vim.inspect(version) .. ", lnum:" .. vim.inspect(lnum)
-      )
       local versions = api.nvim_buf_get_var(buf_id, "dependency_versions")
       versions[tostring(lnum)] = version
       api.nvim_buf_set_var(buf_id, "dependency_versions", versions)
