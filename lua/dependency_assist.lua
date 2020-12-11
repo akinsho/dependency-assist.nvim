@@ -175,7 +175,11 @@ function M.show_versions(buf_id)
       -- setup the buffer variable the first time we open this file
       -- NOTE: confusingly dependency versions can somehow be nil
       -- at this point. If it is reset it to a table
-      local versions = api.nvim_buf_get_var(buf_id, "dependency_versions")
+      local success, versions =
+        pcall(api.nvim_buf_get_var, buf_id, "dependency_versions")
+      if not success then
+        versions = {}
+      end
       versions[tostring(lnum)] = version
       api.nvim_buf_set_var(buf_id, "dependency_versions", versions)
       ui.set_virtual_text(buf_id, lnum, version, VIRTUAL_TEXT_HIGHLIGHT)
