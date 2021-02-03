@@ -226,6 +226,7 @@ local function bordered_window(win_opts, callback)
   local height = #lines
   local config = get_window_config(win_opts.width, height)
   local win = api.nvim_open_win(buf, false, config)
+  vim.wo[win].winhighlight = "NormalFloat:Normal"
 
   local child_config = get_child_config(config, height, #subtitle)
 
@@ -342,7 +343,7 @@ function M.list_window(title, content, options)
         options.modifiable ~= nil and options.modifiable or false
       vim.bo[buf].modifiable = modifiable
       vim.wo[win].cursorline = true
-      vim.wo[win].winhighlight = "CursorLine:TabLineSel"
+      vim.wo[win].winhighlight = "NormalFloat:Normal,CursorLine:TabLineSel"
       cleanup_autocommands(parent_buf)
 
       function _G.__dep_assist_list_cb()
