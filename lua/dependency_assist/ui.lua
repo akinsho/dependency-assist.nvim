@@ -224,7 +224,6 @@ local function bordered_window(win_opts, callback)
   local height = #lines
   local config = get_window_config(win_opts.width, height)
   local win = api.nvim_open_win(buf, false, config)
-  vim.wo[win].winhighlight = "NormalFloat:Normal"
 
   local child_config = get_child_config(config, height, #subtitle)
 
@@ -245,6 +244,8 @@ function M.input_window(title, options)
     function(parent_win, parent_buf, config)
       local buf = api.nvim_create_buf(false, true)
       local win = api.nvim_open_win(buf, true, config)
+      api.nvim_win_set_option(parent_win, "winhighlight", "NormalFloat:Normal")
+      api.nvim_win_set_option(win, "winhighlight", "NormalFloat:Normal")
 
       function _G.__dep_assist_input_cb()
         options.on_select(options.buf_id, get_current_input())
@@ -290,6 +291,8 @@ function M.loading_window()
       api.nvim_buf_set_lines(buf, 0, -1, false, {"loading..."})
       local win = api.nvim_open_win(buf, true, config)
       vim.bo[buf].modifiable = false
+      api.nvim_win_set_option(parent_win, "winhighlight", "NormalFloat:Normal")
+      api.nvim_win_set_option(win, "winhighlight", "NormalFloat:Normal")
       cleanup_autocommands(parent_buf)
       set_mappings(
         buf,
@@ -336,7 +339,8 @@ function M.list_window(title, content, options)
       local modifiable = options.modifiable ~= nil and options.modifiable or false
       vim.bo[buf].modifiable = modifiable
       vim.wo[win].cursorline = true
-      vim.wo[win].winhighlight = "NormalFloat:Normal,CursorLine:TabLineSel"
+      api.nvim_win_set_option(parent_win, "winhighlight", "NormalFloat:Normal")
+      api.nvim_win_set_option(win, "winhighlight", "NormalFloat:Normal,CursorLine:TabLineSel")
       cleanup_autocommands(parent_buf)
 
       function _G.__dep_assist_list_cb()
