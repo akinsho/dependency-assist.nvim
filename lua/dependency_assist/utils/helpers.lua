@@ -1,4 +1,5 @@
 local M = {}
+local api = vim.api
 
 function M.create_cmd(cmd_name, cmd_type, func_name)
   vim.cmd(
@@ -26,10 +27,20 @@ function M.echomsg(msg, hl)
 end
 
 --- @param lnum string
---- @param text string
-function M.insert_beneath(lnum, text)
-  -- TODO see appendbufline()
-  vim.fn.append(lnum, text)
+--- @param text string[]
+--- @param bufnum integer|nil
+function M.insert_beneath(lnum, text, bufnum)
+  bufnum = bufnum or 0
+  local formatted = {}
+  if type(text) == "table" then
+    for _, line in ipairs(text) do
+      local test_line = lnum >= 0 and lnum - 1 or 0
+      local indent_count = vim.fn.indent(test_line)
+      local indent = indent_count > 0 and string.rep(" ", indent_count)
+      table.insert(formatted, indent .. vim.trim(line))
+    end
+  end
+  api.nvim_buf_set_lines(bufnum, lnum, lnum, false, formatted)
 end
 
 --- @param error string
@@ -121,6 +132,9 @@ end
 --- escape any special non alphanumeric characters in a string
 --- @param text string
 function M.escape_pattern(text)
+  if not text then
+    return text
+  end
   return text:gsub("([^%w])", "%%%1")
 end
 
