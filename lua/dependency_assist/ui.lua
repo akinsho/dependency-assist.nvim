@@ -35,8 +35,7 @@ local function cleanup_autocommands(parent_buf)
 end
 
 local function set_mappings(buf_id, maps)
-  local close_fn =
-    [[:lua require"dependency_assist".close_current_window()<CR>]]
+  local close_fn = [[:lua require"dependency_assist".close_current_window()<CR>]]
   local default_mappings = {
     {mode = "n", lhs = "<Esc>", rhs = close_fn},
     {mode = "i", lhs = "<Esc>", rhs = "<c-o>" .. close_fn}
@@ -215,8 +214,7 @@ local function bordered_window(win_opts, callback)
   for _ = 1, win_opts.height do
     table.insert(lines, mid)
   end
-  local subtitle =
-    add_subtitle(win_opts.subtitle, win_opts.width, content_width)
+  local subtitle = add_subtitle(win_opts.subtitle, win_opts.width, content_width)
   vim.list_extend(lines, subtitle)
   table.insert(lines, bot)
 
@@ -265,9 +263,7 @@ function M.input_window(title, options)
       vim.cmd("startinsert!")
       cleanup_autocommands(parent_buf)
 
-      register_current(
-        {buf = buf, win = win, type = "input", parent = parent_win}
-      )
+      register_current({buf = buf, win = win, type = "input", parent = parent_win})
       if options.on_open then
         options.on_open(win, buf)
       end
@@ -275,8 +271,8 @@ function M.input_window(title, options)
   )
 end
 
---- @param content table<string>
---- @return table<string>, bool
+--- @param content string[]
+--- @return string[], boolean
 local function validate_content(content)
   if #content == 0 then
     return {"No results"}, false
@@ -305,9 +301,7 @@ function M.loading_window()
           }
         }
       )
-      register_current(
-        {buf = buf, win = win, type = "list", parent = parent_win}
-      )
+      register_current({buf = buf, win = win, type = "list", parent = parent_win})
       vim.cmd("redraw!")
     end
   )
@@ -339,8 +333,7 @@ function M.list_window(title, content, options)
       api.nvim_buf_set_lines(buf, 0, -1, false, formatted)
       local win = api.nvim_open_win(buf, true, config)
 
-      local modifiable =
-        options.modifiable ~= nil and options.modifiable or false
+      local modifiable = options.modifiable ~= nil and options.modifiable or false
       vim.bo[buf].modifiable = modifiable
       vim.wo[win].cursorline = true
       vim.wo[win].winhighlight = "NormalFloat:Normal,CursorLine:TabLineSel"
@@ -364,9 +357,7 @@ function M.list_window(title, content, options)
           }
         }
       )
-      register_current(
-        {buf = buf, win = win, type = "list", parent = parent_win}
-      )
+      register_current({buf = buf, win = win, type = "list", parent = parent_win})
 
       if options.on_open then
         options.on_open(win, buf)

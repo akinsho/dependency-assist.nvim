@@ -4,8 +4,7 @@ function M.create_cmd(cmd_name, cmd_type, func_name)
   vim.cmd(
     "command! " ..
       (cmd_type and "-" .. cmd_type or "") ..
-        " " ..
-          cmd_name .. ' lua require"dependency_assist".' .. func_name .. "()"
+        " " .. cmd_name .. ' lua require"dependency_assist".' .. func_name .. "()"
   )
 end
 

@@ -53,8 +53,8 @@ function M.get_package(buf, pkg)
             versions,
             {
               buf_id = buf,
-              on_select = function(buf_id, pkg)
-                insert_packages(buf_id, pkg)
+              on_select = function(buf_id, p)
+                insert_packages(buf_id, p)
               end
             }
           )
@@ -119,10 +119,7 @@ local function search_packages(buf, lines)
     -- prevents this unless explicitly called
     local packages = parse_input(input)
     if #packages > 0 then
-      assistant.api.search_multiple_packages(
-        packages,
-        handle_search_results(buf)
-      )
+      assistant.api.search_multiple_packages(packages, handle_search_results(buf))
     else
       h.echomsg('You must enter some packages separated by a ","')
     end
@@ -175,8 +172,7 @@ function M.show_versions(buf_id)
       -- setup the buffer variable the first time we open this file
       -- NOTE: confusingly dependency versions can somehow be nil
       -- at this point. If it is reset it to a table
-      local success, versions =
-        pcall(api.nvim_buf_get_var, buf_id, "dependency_versions")
+      local success, versions = pcall(api.nvim_buf_get_var, buf_id, "dependency_versions")
       if not success then
         versions = {}
       end
@@ -188,12 +184,7 @@ function M.show_versions(buf_id)
 end
 
 function M.set_highlights()
-  vim.cmd(
-    string.format(
-      "highlight %s guifg=LightGreen gui=bold,italic",
-      VIRTUAL_TEXT_HIGHLIGHT
-    )
-  )
+  vim.cmd(string.format("highlight %s guifg=LightGreen gui=bold,italic", VIRTUAL_TEXT_HIGHLIGHT))
 end
 
 --- @param buf_id number

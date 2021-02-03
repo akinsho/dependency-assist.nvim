@@ -91,13 +91,12 @@ function dart.show_versions(buf_id, callback)
   report_outdated_packages(deps, lines, callback)
 end
 
---- @param dependencies table<number, string>
+--- @param dependencies string[]
 --- @param is_dev boolean
 function dart.insert_dependencies(dependencies, is_dev)
   local buf_id = vim.api.nvim_get_current_buf()
   local parsed_lines, lines = parse_pubspec(buf_id, false)
-  local data =
-    is_dev and parsed_lines.dev_dependencies or parsed_lines.dependencies
+  local data = is_dev and parsed_lines.dev_dependencies or parsed_lines.dependencies
   local length = vim.tbl_count(data)
   local index = 1
   local last_inserted
@@ -115,8 +114,7 @@ function dart.insert_dependencies(dependencies, is_dev)
   -- Try to match the "last inserted" dependency i.e. the alphabetically
   -- furthest with a line number
   for idx, line in ipairs(lines) do
-    local is_match =
-      is_matching_pkg(last_inserted.name, last_inserted.version, line)
+    local is_match = is_matching_pkg(last_inserted.name, last_inserted.version, line)
     if is_match then
       lnum = idx - 1
     end
