@@ -151,4 +151,13 @@ function M.find(buf_id, dependency_file)
   return M.path_join(dir, dependency_file)
 end
 
+---Replace the contents of the specified line
+---@param replacement string
+---@param lnum number
+---@param buf_num number|nil
+function M.replace_line(replacement, lnum, buf_num)
+  buf_num = buf_num or 0
+  api.nvim_buf_set_lines(0, lnum - 1, lnum, false, {replacement})
+end
+
 return M

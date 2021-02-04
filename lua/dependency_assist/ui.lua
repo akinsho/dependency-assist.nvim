@@ -67,15 +67,6 @@ local function pad(line)
   return " " .. line .. " "
 end
 
---- @param content table
-local function format_content(content)
-  local formatted = {}
-  for _, item in ipairs(content) do
-    table.insert(formatted, pad(item))
-  end
-  return formatted
-end
-
 --- @param lines table
 --- @param max_width number
 local function get_max_width(lines, max_width)
@@ -327,13 +318,12 @@ function M.list_window(title, content, options)
     height = height,
     subtitle = options.subtitle
   }
-  local formatted = format_content(content)
 
   bordered_window(
     border_opts,
     function(parent_win, parent_buf, config)
       local buf = api.nvim_create_buf(false, true)
-      api.nvim_buf_set_lines(buf, 0, -1, false, formatted)
+      api.nvim_buf_set_lines(buf, 0, -1, false, content)
       local win = api.nvim_open_win(buf, true, config)
 
       local modifiable = options.modifiable ~= nil and options.modifiable or false
@@ -347,6 +337,10 @@ function M.list_window(title, content, options)
         options.on_select(options.buf_id, get_current_input())
       end
 
+      function _G.__dep_assist_list_modify(direction)
+        options.on_modify(api.nvim_get_current_line(), direction)
+      end
+
       local cmd =
         is_valid and [[__dep_assist_list_cb()]] or
         [[require"dependency_assist".close_current_window()<CR>]]
@@ -358,6 +352,16 @@ function M.list_window(title, content, options)
             mode = "n",
             lhs = "<CR>",
             rhs = ":lua " .. cmd .. "<CR>"
+          },
+          {
+            mode = "n",
+            lhs = "h",
+            rhs = [[<cmd>lua __dep_assist_list_modify(-1)<CR>]]
+          },
+          {
+            mode = "n",
+            lhs = "l",
+            rhs = [[<cmd>lua __dep_assist_list_modify(1)<CR>]]
           }
         }
       )

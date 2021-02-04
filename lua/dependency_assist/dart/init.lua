@@ -156,11 +156,13 @@ function dart.get_packages(packages, callback)
     packages,
     function(data)
       local all_latest = {}
+      local all_versions = {}
       for _, result in pairs(data) do
-        local versions = formatter.format_package_details(result)
+        local versions, name = formatter.format_package_details(result)
         table.insert(all_latest, versions[1])
+        all_versions[name] = versions
       end
-      callback(all_latest)
+      callback(all_latest, all_versions)
     end
   )
 end

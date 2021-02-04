@@ -64,23 +64,58 @@ function M.get_package(buf, pkg)
   end
 end
 
+local function select_next_version(versions)
+  if not versions then
+    return function()
+    end
+  end
+  local indices = {}
+  for name, _ in pairs(versions) do
+    indices[name] = 1
+  end
+  return function(package_name, direction)
+    local name
+    for p, _ in pairs(versions) do
+      if string.match(package_name, p) then
+        name = p
+        break
+      end
+    end
+    if not name or not versions[name] then
+      return
+    end
+    local pkg_versions = versions[name]
+    local index = indices[name] + direction
+    index = (index < 1 and 1 or index > #pkg_versions and #pkg_versions) or index
+    local replacement = pkg_versions[index]
+    if not replacement then
+      return
+    end
+    local lnum = vim.fn.line(".")
+    h.replace_line(replacement, lnum)
+    indices[name] = index
+  end
+end
+
 --- @param buf integer
 --- @param packages table
 local function get_latest_versions(buf, packages)
   local assistant = get_assistant(buf)
   assistant.get_packages(
     packages,
-    function(versions)
+    function(latest, all_versions)
       ui.list_window(
         "Confirm packages",
-        versions,
+        latest,
         {
           buf_id = buf,
           on_select = insert_packages,
+          on_modify = select_next_version(all_versions),
           modifiable = true,
           subtitle = {
             "You can delete anything you don't want anymore",
-            "using 'dd'"
+            "using 'dd'.",
+            "To cycle through versions use 'h' and 'l'"
           }
         }
       )
@@ -113,7 +148,7 @@ local function search_packages(buf, lines)
   local assistant = get_assistant(buf)
   ui.close()
   local input = lines[1]
-  if input:len() > 0 then
+  if #input > 0 then
     ui.loading_window()
     -- force neovim to redraw since using jobwait
     -- prevents this unless explicitly called

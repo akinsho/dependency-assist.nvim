@@ -11,6 +11,6 @@
   rocket_cors = "0.5.1"
   dotenv = "0.15.0"
   diesel = { version = "1.4.4", features = ["chrono", "uuidv07"] }
-  rust-argon2 = "0.8.2"
+  rust-argon2 = "1.4.5"
   rand = "0.7.3"
   libstripe = "0.5.9"
