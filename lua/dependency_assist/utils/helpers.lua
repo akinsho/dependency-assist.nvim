@@ -12,7 +12,7 @@ end
 --- @param ft string
 function M.assistant_error(ft)
   local cmd =
-    ft == "" and "Dependency couldn't get the correct filetype" or
+    not ft or ft == "" and "Dependency assist couldn't get the correct filetype" or
     "Dependency assist does not support " .. ft
   M.echoerr(cmd)
 end
