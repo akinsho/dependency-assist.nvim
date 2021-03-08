@@ -50,7 +50,7 @@ local function report_outdated_packages(dependencies, lines, callback)
         local version = pkg.crate.newest_version
         local name = pkg.crate.name
         for lnum, line in ipairs(lines) do
-          if line:match(name) then
+          if line:match("^[%s]*" .. name .. "[%s]*=") then
             callback(lnum - 1, version)
           end
         end
