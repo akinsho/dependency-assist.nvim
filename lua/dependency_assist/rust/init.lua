@@ -51,7 +51,7 @@ local function report_outdated_packages(dependencies, lines, callback)
         local name = pkg.crate.name
         for lnum, line in ipairs(lines) do
           if line:match(name) then
-            callback(lnum, version)
+            callback(lnum - 1, version)
           end
         end
       end
