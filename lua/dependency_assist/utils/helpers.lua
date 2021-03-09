@@ -21,9 +21,12 @@ end
 --- @param hl string
 function M.echomsg(msg, hl)
   hl = hl or "Title"
-  vim.cmd("echohl " .. hl)
-  vim.cmd(string.format('echomsg "%s"', msg))
-  vim.cmd("echohl clear")
+  vim.api.nvim_echo({{msg, hl}}, true, {})
+end
+
+--- @param msg string
+function M.echoerr(msg)
+  vim.api.nvim_echo({{msg, "ErrorMsg"}}, true, {})
 end
 
 --- @param lnum string
@@ -41,11 +44,6 @@ function M.insert_beneath(lnum, text, bufnum)
     end
   end
   api.nvim_buf_set_lines(bufnum, lnum, lnum, false, formatted)
-end
-
---- @param error string
-function M.echoerr(error)
-  vim.cmd(string.format('echoerr "%s"', error))
 end
 
 --- @param buf_id integer
