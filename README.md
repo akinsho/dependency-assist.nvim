@@ -61,23 +61,7 @@ available `UpdateDependencyLine` will swap the current version for the latest.
 ## Goals
 
 This plugin was designed to be extensible 🤞. Hopefully adding a module for other compatible languages shouldn't be too
-much work but I haven't tested this out by integrating another example yet.
+much work.
 
 This won't scale to all languages, and tbh I'm going to focus my energy on languages I use. If you are interested in contributing a
 module for the language you use, open an issue.
-
-### General
-
-- [ ] Review dependency versions
-- [ ] Clear dependency on update complete
-
-### Dart
-
-- [x] Parse `pubspec.yaml` and show versions using virtual text
-- [x] insert specifically into `devDependencies` or standard dependencies
-- [x] search for multiple packages
-
-### Rust
-
-- [x] Implement version update per line
-- [ ] Handle version virtual text for different package formats
