@@ -1,6 +1,4 @@
-local ui = require("dependency_assist/ui")
-local assistants = require("dependency_assist/")
-local h = require("dependency_assist/utils/helpers")
+local h = require("dependency_assist.utils.helpers")
 
 local M = {}
 local api = vim.api
@@ -10,6 +8,7 @@ local state = { is_dev = false }
 
 --- @param buf integer
 local function get_assistant(buf)
+  local assistants = require("dependency_assist.assistants")
   local ft = vim.bo[buf].filetype
   local assistant = assistants[ft]
   -- if we can't get the correct tool based on filetype
@@ -30,7 +29,7 @@ end
 
 local function insert_packages(buf_id, packages)
   local assistant = get_assistant(buf_id)
-  ui.close()
+  require("dependency_assist.ui").close()
   if not h.is_dependency_file(buf_id, assistant.filename) then
     local filepath = assistant.find_dependency_file(buf_id)
     vim.cmd("e " .. filepath)
@@ -46,11 +45,9 @@ function M.get_package(buf, pkg)
     assistant.api.get_package(pkg, function(data)
       local versions = assistant.formatter.format_package_details(data)
       if versions then
-        ui.list_window(pkg .. " versions", versions, {
+        require("dependency_assist.ui").list_window(pkg .. " versions", versions, {
           buf_id = buf,
-          on_select = function(buf_id, p)
-            insert_packages(buf_id, p)
-          end,
+          on_select = insert_packages,
         })
       end
     end)
@@ -95,7 +92,7 @@ end
 local function get_latest_versions(buf, packages)
   local assistant = get_assistant(buf)
   assistant.get_packages(packages, function(latest, all_versions)
-    ui.list_window("Confirm packages", latest, {
+    require("dependency_assist.ui").list_window("Confirm packages", latest, {
       buf_id = buf,
       on_select = insert_packages,
       on_modify = select_next_version(all_versions),
@@ -131,6 +128,7 @@ end
 --- @param buf integer
 --- @param lines table
 local function search_packages(buf, lines)
+  local ui = require("dependency_assist.ui")
   local assistant = get_assistant(buf)
   ui.close()
   local input = lines[1]
@@ -151,6 +149,7 @@ end
 --- a callback once a selection is made triggering a search
 --- @param is_dev boolean
 local function dependency_search(is_dev)
+  local ui = require("dependency_assist.ui")
   state.is_dev = is_dev
   ui.set_parent_window(api.nvim_get_current_win())
   local buf = api.nvim_get_current_buf()
@@ -180,6 +179,7 @@ local function check_is_setup(buf_id)
 end
 
 function M.show_versions(buf_id)
+  local ui = require("dependency_assist.ui")
   local assistant = get_assistant(buf_id)
   -- clear existing virtual text before adding new versions
   ui.clear_virtual_text(buf_id)
@@ -262,6 +262,7 @@ end
 
 --- @param preferences table
 function M.setup(preferences)
+  local assistants = require("dependency_assist.assistants")
   local names = {}
   local filetypes = {}
   for _, data in pairs(assistants) do
@@ -308,6 +309,6 @@ function M.upgrade_current_package()
   end
 end
 
-M.close_current_window = ui.close
+M.close_current_window = require("dependency_assist.ui").close
 
 return M
