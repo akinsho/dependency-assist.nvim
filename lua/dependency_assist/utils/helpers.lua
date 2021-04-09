@@ -1,5 +1,6 @@
 local M = {}
 local api = vim.api
+local fmt = string.format
 
 function M.create_cmd(cmd_name, cmd_type, func_name)
   vim.cmd(
@@ -26,7 +27,15 @@ end
 
 --- @param msg string
 function M.echoerr(msg)
-  vim.api.nvim_echo({{msg, "ErrorMsg"}}, true, {})
+  if type(msg) == "string" then
+    msg = {{msg, "ErrorMsg"}}
+  elseif type(msg) == "table" and type(msg[1]) == "table" then
+    assert(type(msg[1]) == "string", fmt('%s should be a string', vim.inspect(msg[1])))
+    assert(type(msg[2]) == "string", fmt('%s should be a string', vim.inspect(msg[2])))
+  else
+    msg = {{fmt("Invalid message passed in %s", msg), "ErrorMsg"}}
+  end
+  vim.api.nvim_echo(msg, true, {})
 end
 
 --- @param lnum string
