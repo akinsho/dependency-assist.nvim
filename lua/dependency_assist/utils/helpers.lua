@@ -30,8 +30,9 @@ function M.echoerr(msg)
   if type(msg) == "string" then
     msg = {{msg, "ErrorMsg"}}
   elseif type(msg) == "table" and type(msg[1]) == "table" then
-    assert(type(msg[1]) == "string", fmt('%s should be a string', vim.inspect(msg[1])))
-    assert(type(msg[2]) == "string", fmt('%s should be a string', vim.inspect(msg[2])))
+    local tbl = msg[1]
+    assert(type(tbl[1]) == "string", fmt('%s should be a string', vim.inspect(tbl[1])))
+    assert(type(tbl[2]) == "string", fmt('%s should be a string', vim.inspect(tbl[2])))
   else
     msg = {{fmt("Invalid message passed in %s", msg), "ErrorMsg"}}
   end
