@@ -291,20 +291,27 @@ end
 --- @param preferences table
 function M.setup(preferences)
   local names = {}
+  local filetypes = {}
   for _, data in pairs(assistants) do
     table.insert(names, data.filename)
     table.insert(names, "*." .. data.extension)
+    table.insert(filetypes, data.filetype)
   end
   local filenames = table.concat(names, ",")
 
   function _G.__dep_assistant_setup()
-    setup_ft(preferences)
+    -- Specifically ensure that despite a file having the correct extension it is actually
+    -- a supported filetype e.g. a special buffer could be created with a name thing.rust with a
+    -- filetype of "fake-buf". This should not trigger the plugin
+    if vim.tbl_contains(filetypes, vim.bo.filetype) then
+      setup_ft(preferences)
+    end
   end
 
   h.create_augroups(
     {
       dependency_assist_setup = {
-        {"BufEnter", filenames, [[lua _G.__dep_assistant_setup()]]}
+        {"BufEnter", filenames, "++once", [[lua _G.__dep_assistant_setup()]]}
       }
     }
   )
