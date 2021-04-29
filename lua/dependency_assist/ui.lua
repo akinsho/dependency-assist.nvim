@@ -1,5 +1,5 @@
 local api = vim.api
-local helpers = require "dependency_assist/utils/helpers"
+local helpers = require("dependency_assist/utils/helpers")
 
 local namespace = vim.api.nvim_create_namespace("dependency_assist")
 
@@ -10,49 +10,41 @@ local M = {}
 local state = {
   is_open = false,
   current = nil,
-  enclosing_window = nil
+  enclosing_window = nil,
 }
 
 --- @param parent_buf number
 local function cleanup_autocommands(parent_buf)
-  helpers.create_augroups(
-    {
-      dependency_assist_cleanup = {
-        {
-          "BufWipeout,BufDelete",
-          "<buffer>",
-          string.format([[execute "bw %d | stopinsert"]], parent_buf)
-        },
-        {
-          "WinLeave",
-          "<buffer>",
-          "nested",
-          [[lua require"dependency_assist".close_current_window()]]
-        }
-      }
-    }
-  )
+  helpers.create_augroups({
+    dependency_assist_cleanup = {
+      {
+        "BufWipeout,BufDelete",
+        "<buffer>",
+        string.format([[execute "bw %d | stopinsert"]], parent_buf),
+      },
+      {
+        "WinLeave",
+        "<buffer>",
+        "nested",
+        [[lua require"dependency_assist".close_current_window()]],
+      },
+    },
+  })
 end
 
 local function set_mappings(buf_id, maps)
   local close_fn = [[:lua require"dependency_assist".close_current_window()<CR>]]
   local default_mappings = {
-    {mode = "n", lhs = "<Esc>", rhs = close_fn},
-    {mode = "i", lhs = "<Esc>", rhs = "<c-o>" .. close_fn}
+    { mode = "n", lhs = "<Esc>", rhs = close_fn },
+    { mode = "i", lhs = "<Esc>", rhs = "<c-o>" .. close_fn },
   }
   maps = vim.list_extend(maps, default_mappings)
   for _, map in ipairs(maps) do
-    api.nvim_buf_set_keymap(
-      buf_id,
-      map.mode,
-      map.lhs,
-      map.rhs,
-      {
-        nowait = true,
-        silent = true,
-        noremap = true
-      }
-    )
+    api.nvim_buf_set_keymap(buf_id, map.mode, map.lhs, map.rhs, {
+      nowait = true,
+      silent = true,
+      noremap = true,
+    })
   end
 end
 
@@ -99,7 +91,7 @@ local function get_window_config(width, height)
     col = col,
     row = row,
     style = "minimal",
-    focusable = false
+    focusable = false,
   }
 end
 
@@ -201,7 +193,7 @@ local function bordered_window(win_opts, callback)
   local mid = add_border(padding, "mid")
   local bot = add_border(bottom_line, "bottom")
 
-  local lines = {top}
+  local lines = { top }
   for _ = 1, win_opts.height do
     table.insert(lines, mid)
   end
@@ -228,77 +220,65 @@ function M.input_window(title, options)
     title = title,
     width = MAX_WIDTH,
     height = 1,
-    subtitle = options.subtitle
+    subtitle = options.subtitle,
   }
-  bordered_window(
-    border_opts,
-    function(parent_win, parent_buf, config)
-      local buf = api.nvim_create_buf(false, true)
-      local win = api.nvim_open_win(buf, true, config)
-      api.nvim_win_set_option(parent_win, "winhighlight", "NormalFloat:Normal")
-      api.nvim_win_set_option(win, "winhighlight", "NormalFloat:Normal")
+  bordered_window(border_opts, function(parent_win, parent_buf, config)
+    local buf = api.nvim_create_buf(false, true)
+    local win = api.nvim_open_win(buf, true, config)
+    api.nvim_win_set_option(parent_win, "winhighlight", "NormalFloat:Normal")
+    api.nvim_win_set_option(win, "winhighlight", "NormalFloat:Normal")
 
-      function _G.__dep_assist_input_cb()
-        options.on_select(options.buf_id, get_current_input())
-      end
-
-      set_mappings(
-        buf,
-        {
-          {
-            mode = "i",
-            lhs = "<CR>",
-            rhs = "<c-o>:lua __dep_assist_input_cb()<CR>"
-          }
-        }
-      )
-      vim.cmd("startinsert!")
-      cleanup_autocommands(parent_buf)
-
-      register_current({buf = buf, win = win, type = "input", parent = parent_win})
-      if options.on_open then
-        options.on_open(win, buf)
-      end
+    function _G.__dep_assist_input_cb()
+      options.on_select(options.buf_id, get_current_input())
     end
-  )
+
+    set_mappings(buf, {
+      {
+        mode = "i",
+        lhs = "<CR>",
+        rhs = "<c-o>:lua __dep_assist_input_cb()<CR>",
+      },
+    })
+    vim.cmd("startinsert!")
+    cleanup_autocommands(parent_buf)
+
+    register_current({ buf = buf, win = win, type = "input", parent = parent_win })
+    if options.on_open then
+      options.on_open(win, buf)
+    end
+  end)
 end
 
 --- @param content string[]
 --- @return string[], boolean
 local function validate_content(content)
   if #content == 0 then
-    return {"No results"}, false
+    return { "No results" }, false
   else
     return content, true
   end
 end
 
 function M.loading_window()
-  local opts = {height = 1, width = MAX_WIDTH}
-  bordered_window(
-    opts,
-    function(parent_win, parent_buf, config)
-      local buf = api.nvim_create_buf(false, true)
-      api.nvim_buf_set_lines(buf, 0, -1, false, {"loading..."})
-      local win = api.nvim_open_win(buf, true, config)
-      vim.bo[buf].modifiable = false
-      api.nvim_win_set_option(parent_win, "winhighlight", "NormalFloat:Normal")
-      api.nvim_win_set_option(win, "winhighlight", "NormalFloat:Normal")
-      cleanup_autocommands(parent_buf)
-      set_mappings(
-        buf,
-        {
-          {
-            mode = "n",
-            lhs = "<CR>",
-            rhs = ':lua require"dependency_assist".close_current_window()<CR>'
-          }
-        }
-      )
-      register_current({buf = buf, win = win, type = "list", parent = parent_win})
-      vim.cmd("redraw!")
-    end
-  )
+  local opts = { height = 1, width = MAX_WIDTH }
+  bordered_window(opts, function(parent_win, parent_buf, config)
+    local buf = api.nvim_create_buf(false, true)
+    api.nvim_buf_set_lines(buf, 0, -1, false, { "loading..." })
+    local win = api.nvim_open_win(buf, true, config)
+    vim.bo[buf].modifiable = false
+    api.nvim_win_set_option(parent_win, "winhighlight", "NormalFloat:Normal")
+    api.nvim_win_set_option(win, "winhighlight", "NormalFloat:Normal")
+    cleanup_autocommands(parent_buf)
+    set_mappings(buf, {
+      {
+        mode = "n",
+        lhs = "<CR>",
+        rhs = ':lua require"dependency_assist".close_current_window()<CR>',
+      },
+    })
+    register_current({ buf = buf, win = win, type = "list", parent = parent_win })
+    vim.cmd("redraw!")
+  end)
 end
 
 --- @param title string
@@ -316,62 +296,55 @@ function M.list_window(title, content, options)
     title = title,
     width = width,
     height = height,
-    subtitle = options.subtitle
+    subtitle = options.subtitle,
   }
 
-  bordered_window(
-    border_opts,
-    function(parent_win, parent_buf, config)
-      local buf = api.nvim_create_buf(false, true)
-      api.nvim_buf_set_lines(buf, 0, -1, false, content)
-      local win = api.nvim_open_win(buf, true, config)
+  bordered_window(border_opts, function(parent_win, parent_buf, config)
+    local buf = api.nvim_create_buf(false, true)
+    api.nvim_buf_set_lines(buf, 0, -1, false, content)
+    local win = api.nvim_open_win(buf, true, config)
 
-      local modifiable = options.modifiable ~= nil and options.modifiable or false
-      vim.bo[buf].modifiable = modifiable
-      vim.wo[win].cursorline = true
-      api.nvim_win_set_option(parent_win, "winhighlight", "NormalFloat:Normal")
-      api.nvim_win_set_option(win, "winhighlight", "NormalFloat:Normal,CursorLine:TabLineSel")
-      cleanup_autocommands(parent_buf)
+    local modifiable = options.modifiable ~= nil and options.modifiable or false
+    vim.bo[buf].modifiable = modifiable
+    vim.wo[win].cursorline = true
+    api.nvim_win_set_option(parent_win, "winhighlight", "NormalFloat:Normal")
+    api.nvim_win_set_option(win, "winhighlight", "NormalFloat:Normal,CursorLine:TabLineSel")
+    cleanup_autocommands(parent_buf)
 
-      function _G.__dep_assist_list_cb()
-        options.on_select(options.buf_id, get_current_input())
-      end
-
-      function _G.__dep_assist_list_modify(direction)
-        options.on_modify(api.nvim_get_current_line(), direction)
-      end
-
-      local cmd =
-        is_valid and [[__dep_assist_list_cb()]] or
-        [[require"dependency_assist".close_current_window()<CR>]]
-
-      set_mappings(
-        buf,
-        {
-          {
-            mode = "n",
-            lhs = "<CR>",
-            rhs = ":lua " .. cmd .. "<CR>"
-          },
-          {
-            mode = "n",
-            lhs = "h",
-            rhs = [[<cmd>lua __dep_assist_list_modify(-1)<CR>]]
-          },
-          {
-            mode = "n",
-            lhs = "l",
-            rhs = [[<cmd>lua __dep_assist_list_modify(1)<CR>]]
-          }
-        }
-      )
-      register_current({buf = buf, win = win, type = "list", parent = parent_win})
-
-      if options.on_open then
-        options.on_open(win, buf)
-      end
+    function _G.__dep_assist_list_cb()
+      options.on_select(options.buf_id, get_current_input())
     end
-  )
+
+    function _G.__dep_assist_list_modify(direction)
+      options.on_modify(api.nvim_get_current_line(), direction)
+    end
+
+    local cmd = is_valid and [[__dep_assist_list_cb()]]
+      or [[require"dependency_assist".close_current_window()<CR>]]
+
+    set_mappings(buf, {
+      {
+        mode = "n",
+        lhs = "<CR>",
+        rhs = ":lua " .. cmd .. "<CR>",
+      },
+      {
+        mode = "n",
+        lhs = "h",
+        rhs = [[<cmd>lua __dep_assist_list_modify(-1)<CR>]],
+      },
+      {
+        mode = "n",
+        lhs = "l",
+        rhs = [[<cmd>lua __dep_assist_list_modify(1)<CR>]],
+      },
+    })
+    register_current({ buf = buf, win = win, type = "list", parent = parent_win })
+
+    if options.on_open then
+      options.on_open(win, buf)
+    end
+  end)
 end
 
 function M.set_parent_window(id)
@@ -389,7 +362,7 @@ end
 --- @param hl string
 function M.set_virtual_text(buf_id, lnum, text, hl)
   hl = hl or "Comment"
-  vim.api.nvim_buf_set_virtual_text(buf_id, namespace, lnum, {{text, hl}}, {})
+  vim.api.nvim_buf_set_virtual_text(buf_id, namespace, lnum, { { text, hl } }, {})
 end
 
 return M

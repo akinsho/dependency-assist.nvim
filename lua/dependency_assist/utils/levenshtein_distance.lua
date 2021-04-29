@@ -36,11 +36,7 @@ function string.levenshtein(str1, str2)
       end
 
       matrix[i][j] =
-        math.min(
-        matrix[i - 1][j] + 1,
-        matrix[i][j - 1] + 1,
-        matrix[i - 1][j - 1] + cost
-      )
+        math.min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + cost)
     end
   end
 

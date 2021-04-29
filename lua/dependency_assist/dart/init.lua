@@ -1,20 +1,20 @@
-local yaml = require "dependency_assist/yaml"
-local api = require "dependency_assist/dart/pubspec_api"
-local formatter = require "dependency_assist/dart/formatter"
-local helpers = require "dependency_assist/utils/helpers"
+local yaml = require("dependency_assist/yaml")
+local api = require("dependency_assist/dart/pubspec_api")
+local formatter = require("dependency_assist/dart/formatter")
+local helpers = require("dependency_assist/utils/helpers")
 
 local extension = "dart"
 local dependency_file = "pubspec.yaml"
 local dev_block = "devDependencies:"
 local dependency_block = "dependencies:"
-local filetypes = {"dart", "yaml"}
+local filetypes = { "dart", "yaml" }
 
 local dart = {
   api = api,
   filetypes = filetypes,
   extension = extension,
   formatter = formatter,
-  filename = dependency_file
+  filename = dependency_file,
 }
 
 --- @param name string
@@ -35,21 +35,18 @@ end
 --- @param callback function
 local function report_outdated_packages(deps, lines, callback)
   if deps and not vim.tbl_isempty(deps) then
-    api.check_outdated_packages(
-      deps,
-      function(pkg)
-        local lnum
-        local is_string = type(pkg.previous) == "string"
-        for idx, line in ipairs(lines) do
-          if is_string and is_matching_pkg(pkg.name, pkg.previous, line) then
-            lnum = idx - 1
-          end
-        end
-        if lnum then
-          callback(lnum, pkg.latest)
+    api.check_outdated_packages(deps, function(pkg)
+      local lnum
+      local is_string = type(pkg.previous) == "string"
+      for idx, line in ipairs(lines) do
+        if is_string and is_matching_pkg(pkg.name, pkg.previous, line) then
+          lnum = idx - 1
         end
       end
-    )
+      if lnum then
+        callback(lnum, pkg.latest)
+      end
+    end)
   end
 end
 
@@ -108,7 +105,7 @@ function dart.insert_dependencies(dependencies, is_dev)
   -- give us back a line number
   for k, v in pairs(data) do
     if index == length then
-      last_inserted = {name = k, version = v}
+      last_inserted = { name = k, version = v }
     end
     index = index + 1
   end
@@ -154,19 +151,16 @@ function dart.process_search_results(results)
 end
 
 function dart.get_packages(packages, callback)
-  api.get_packages(
-    packages,
-    function(data)
-      local all_latest = {}
-      local all_versions = {}
-      for _, result in pairs(data) do
-        local versions, name = formatter.format_package_details(result)
-        table.insert(all_latest, versions[1])
-        all_versions[name] = versions
-      end
-      callback(all_latest, all_versions)
+  api.get_packages(packages, function(data)
+    local all_latest = {}
+    local all_versions = {}
+    for _, result in pairs(data) do
+      local versions, name = formatter.format_package_details(result)
+      table.insert(all_latest, versions[1])
+      all_versions[name] = versions
     end
-  )
+    callback(all_latest, all_versions)
+  end)
 end
 
 return dart

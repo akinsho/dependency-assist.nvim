@@ -1,12 +1,12 @@
-local ui = require "dependency_assist/ui"
-local assistants = require "dependency_assist/"
-local h = require "dependency_assist/utils/helpers"
+local ui = require("dependency_assist/ui")
+local assistants = require("dependency_assist/")
+local h = require("dependency_assist/utils/helpers")
 
 local M = {}
 local api = vim.api
 local VIRTUAL_TEXT_HIGHLIGHT = "DependencyAssistVirtualText"
 
-local state = {is_dev = false}
+local state = { is_dev = false }
 
 --- @param buf integer
 local function get_assistant(buf)
@@ -43,24 +43,17 @@ end
 function M.get_package(buf, pkg)
   local assistant = get_assistant(buf)
   if pkg then
-    assistant.api.get_package(
-      pkg,
-      function(data)
-        local versions = assistant.formatter.format_package_details(data)
-        if versions then
-          ui.list_window(
-            pkg .. " versions",
-            versions,
-            {
-              buf_id = buf,
-              on_select = function(buf_id, p)
-                insert_packages(buf_id, p)
-              end
-            }
-          )
-        end
+    assistant.api.get_package(pkg, function(data)
+      local versions = assistant.formatter.format_package_details(data)
+      if versions then
+        ui.list_window(pkg .. " versions", versions, {
+          buf_id = buf,
+          on_select = function(buf_id, p)
+            insert_packages(buf_id, p)
+          end,
+        })
       end
-    )
+    end)
   end
 end
 
@@ -101,26 +94,19 @@ end
 --- @param packages table
 local function get_latest_versions(buf, packages)
   local assistant = get_assistant(buf)
-  assistant.get_packages(
-    packages,
-    function(latest, all_versions)
-      ui.list_window(
-        "Confirm packages",
-        latest,
-        {
-          buf_id = buf,
-          on_select = insert_packages,
-          on_modify = select_next_version(all_versions),
-          modifiable = true,
-          subtitle = {
-            "You can delete anything you don't want anymore",
-            "using 'dd'.",
-            "To cycle through versions use 'h' and 'l'"
-          }
-        }
-      )
-    end
-  )
+  assistant.get_packages(packages, function(latest, all_versions)
+    ui.list_window("Confirm packages", latest, {
+      buf_id = buf,
+      on_select = insert_packages,
+      on_modify = select_next_version(all_versions),
+      modifiable = true,
+      subtitle = {
+        "You can delete anything you don't want anymore",
+        "using 'dd'.",
+        "To cycle through versions use 'h' and 'l'",
+      },
+    })
+  end)
 end
 
 --- @param buf integer
@@ -168,14 +154,11 @@ local function dependency_search(is_dev)
   state.is_dev = is_dev
   ui.set_parent_window(api.nvim_get_current_win())
   local buf = api.nvim_get_current_buf()
-  ui.input_window(
-    "Enter a package name",
-    {
-      subtitle = {"Packages should be separated by a comma"},
-      buf_id = buf,
-      on_select = search_packages
-    }
-  )
+  ui.input_window("Enter a package name", {
+    subtitle = { "Packages should be separated by a comma" },
+    buf_id = buf,
+    on_select = search_packages,
+  })
 end
 
 -- TODO if the booleans could be passed to the
@@ -201,21 +184,18 @@ function M.show_versions(buf_id)
   -- clear existing virtual text before adding new versions
   ui.clear_virtual_text(buf_id)
   api.nvim_buf_set_var(buf_id, "dependency_versions", {})
-  assistant.show_versions(
-    buf_id,
-    function(lnum, version)
-      -- setup the buffer variable the first time we open this file
-      -- NOTE: confusingly dependency versions can somehow be nil
-      -- at this point. If it is reset it to a table
-      local success, versions = pcall(api.nvim_buf_get_var, buf_id, "dependency_versions")
-      if not success then
-        versions = {}
-      end
-      versions[tostring(lnum)] = version
-      api.nvim_buf_set_var(buf_id, "dependency_versions", versions)
-      ui.set_virtual_text(buf_id, lnum, version, VIRTUAL_TEXT_HIGHLIGHT)
+  assistant.show_versions(buf_id, function(lnum, version)
+    -- setup the buffer variable the first time we open this file
+    -- NOTE: confusingly dependency versions can somehow be nil
+    -- at this point. If it is reset it to a table
+    local success, versions = pcall(api.nvim_buf_get_var, buf_id, "dependency_versions")
+    if not success then
+      versions = {}
     end
-  )
+    versions[tostring(lnum)] = version
+    api.nvim_buf_set_var(buf_id, "dependency_versions", versions)
+    ui.set_virtual_text(buf_id, lnum, version, VIRTUAL_TEXT_HIGHLIGHT)
+  end)
 end
 
 function M.set_highlights()
@@ -226,16 +206,10 @@ end
 --- @param preferences table
 local function setup_dependency_file(buf_id, preferences)
   if preferences and preferences.key then
-    api.nvim_buf_set_keymap(
-      buf_id,
-      "n",
-      preferences.key,
-      ":AddDependency<CR>",
-      {
-        noremap = true,
-        silent = true
-      }
-    )
+    api.nvim_buf_set_keymap(buf_id, "n", preferences.key, ":AddDependency<CR>", {
+      noremap = true,
+      silent = true,
+    })
   end
 
   h.create_cmd("UpdateDependencyLine", "buffer", "upgrade_current_package")
@@ -249,24 +223,22 @@ local function setup_dependency_file(buf_id, preferences)
   M.set_highlights()
   -- TODO cache the versions so this isn't triggered too often
   -- once caching success fully consider using TextChanged
-  h.create_augroups(
-    {
-      dependency_assist_highlights = {
-        {
-          "ColorScheme",
-          "*",
-          [[lua require"dependency_assist".set_highlights()]]
-        }
+  h.create_augroups({
+    dependency_assist_highlights = {
+      {
+        "ColorScheme",
+        "*",
+        [[lua require"dependency_assist".set_highlights()]],
       },
-      dependency_assist_update_versions = {
-        {
-          "BufWritePost",
-          "<buffer>",
-          [[lua _G.__dep_assistant_update_versions()]]
-        }
-      }
-    }
-  )
+    },
+    dependency_assist_update_versions = {
+      {
+        "BufWritePost",
+        "<buffer>",
+        [[lua _G.__dep_assistant_update_versions()]],
+      },
+    },
+  })
 end
 
 --- @param preferences table

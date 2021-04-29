@@ -6,7 +6,7 @@ local TOML = {
   --   tables having mixed keys
   --   redefining a table
   --   redefining a key within a table
-  strict = true
+  strict = true,
 }
 
 -- converts TOML data into a lua table
@@ -155,12 +155,12 @@ TOML.parse = function(toml, options)
             f = "\f",
             r = "\r",
             ['"'] = '"',
-            ["\\"] = "\\"
+            ["\\"] = "\\",
           }
           -- utf function from http://stackoverflow.com/a/26071044
           -- converts \uXXX into actual unicode
           local function utf(char)
-            local bytemarkers = {{0x7ff, 192}, {0xffff, 224}, {0x1fffff, 240}}
+            local bytemarkers = { { 0x7ff, 192 }, { 0xffff, 224 }, { 0x1fffff, 240 } }
             if char < 128 then
               return string.char(char)
             end
@@ -190,9 +190,9 @@ TOML.parse = function(toml, options)
             step(5)
             uni = tonumber(uni, 16)
             if
-              (uni >= 0 and uni <= 0xd7ff) and
-                not (uni >= 0xe000 and uni <= 0x10ffff)
-             then
+              (uni >= 0 and uni <= 0xd7ff)
+              and not (uni >= 0xe000 and uni <= 0x10ffff)
+            then
               str = str .. utf(uni)
             else
               err("Unicode escape is not a Unicode scalar")
@@ -200,16 +200,20 @@ TOML.parse = function(toml, options)
           elseif char(1) == "U" then
             -- utf-32
             step()
-            local uni =
-              char(1) ..
-              char(2) ..
-                char(3) .. char(4) .. char(5) .. char(6) .. char(7) .. char(8)
+            local uni = char(1)
+              .. char(2)
+              .. char(3)
+              .. char(4)
+              .. char(5)
+              .. char(6)
+              .. char(7)
+              .. char(8)
             step(9)
             uni = tonumber(uni, 16)
             if
-              (uni >= 0 and uni <= 0xd7ff) and
-                not (uni >= 0xe000 and uni <= 0x10ffff)
-             then
+              (uni >= 0 and uni <= 0xd7ff)
+              and not (uni >= 0xe000 and uni <= 0x10ffff)
+            then
               str = str .. utf(uni)
             else
               err("Unicode escape is not a Unicode scalar")
@@ -225,7 +229,7 @@ TOML.parse = function(toml, options)
       end
     end
 
-    return {value = str, type = "string"}
+    return { value = str, type = "string" }
   end
 
   local function parseNumber()
@@ -248,19 +252,25 @@ TOML.parse = function(toml, options)
           err("Invalid exponent")
         end
       elseif
-        char():match(ws) or char() == "#" or char():match(nl) or char() == "," or
-          char() == "]" or
-          char() == "}"
-       then
+        char():match(ws)
+        or char() == "#"
+        or char():match(nl)
+        or char() == ","
+        or char() == "]"
+        or char() == "}"
+      then
         break
       elseif char() == "T" or char() == "Z" then
         -- parse the date (as a string, since lua has no date object)
         date = true
         while (bounds()) do
           if
-            char() == "," or char() == "]" or char() == "#" or char():match(nl) or
-              char():match(ws)
-           then
+            char() == ","
+            or char() == "]"
+            or char() == "#"
+            or char():match(nl)
+            or char():match(ws)
+          then
             break
           end
           num = num .. char()
@@ -273,7 +283,7 @@ TOML.parse = function(toml, options)
     end
 
     if date then
-      return {value = num, type = "date"}
+      return { value = num, type = "date" }
     end
 
     local float = false
@@ -290,11 +300,11 @@ TOML.parse = function(toml, options)
         -- of a power operation to a float, so we have
         -- to convert it back to an int with math.floor
         value = math.floor(num * 10 ^ exp),
-        type = "int"
+        type = "int",
       }
     end
 
-    return {value = num * 10 ^ exp, type = "float"}
+    return { value = num * 10 ^ exp, type = "float" }
   end
 
   local parseArray, getValue
@@ -342,7 +352,7 @@ TOML.parse = function(toml, options)
     end
     step()
 
-    return {value = array, type = "array"}
+    return { value = array, type = "array" }
   end
 
   local function parseInlineTable()
@@ -390,17 +400,17 @@ TOML.parse = function(toml, options)
     end
     step() -- skip closing brace
 
-    return {value = tbl, type = "array"}
+    return { value = tbl, type = "array" }
   end
 
   local function parseBoolean()
     local v
     if toml:sub(cursor, cursor + 3) == "true" then
       step(4)
-      v = {value = true, type = "boolean"}
+      v = { value = true, type = "boolean" }
     elseif toml:sub(cursor, cursor + 4) == "false" then
       step(5)
-      v = {value = false, type = "boolean"}
+      v = { value = false, type = "boolean" }
     else
       err("Invalid primitive")
     end
@@ -445,7 +455,7 @@ TOML.parse = function(toml, options)
     end
 
     if char():match(nl) then
-    -- skip
+      -- skip
     end
 
     if char() == "=" then

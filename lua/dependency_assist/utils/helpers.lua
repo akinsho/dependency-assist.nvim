@@ -4,17 +4,21 @@ local fmt = string.format
 
 function M.create_cmd(cmd_name, cmd_type, func_name)
   vim.cmd(
-    "command! " ..
-      (cmd_type and "-" .. cmd_type or "") ..
-        " " .. cmd_name .. ' lua require"dependency_assist".' .. func_name .. "()"
+    "command! "
+      .. (cmd_type and "-" .. cmd_type or "")
+      .. " "
+      .. cmd_name
+      .. ' lua require"dependency_assist".'
+      .. func_name
+      .. "()"
   )
 end
 
 --- @param ft string
 function M.assistant_error(ft)
-  local cmd =
-    not ft or ft == "" and "Dependency assist couldn't get the correct filetype" or
-    "Dependency assist does not support " .. ft
+  local cmd = not ft
+    or ft == "" and "Dependency assist couldn't get the correct filetype"
+    or "Dependency assist does not support " .. ft
   M.echoerr(cmd)
 end
 
@@ -22,19 +26,19 @@ end
 --- @param hl string
 function M.echomsg(msg, hl)
   hl = hl or "Title"
-  vim.api.nvim_echo({{msg, hl}}, true, {})
+  vim.api.nvim_echo({ { msg, hl } }, true, {})
 end
 
 --- @param msg string
 function M.echoerr(msg)
   if type(msg) == "string" then
-    msg = {{msg, "ErrorMsg"}}
+    msg = { { msg, "ErrorMsg" } }
   elseif type(msg) == "table" and type(msg[1]) == "table" then
     local tbl = msg[1]
-    assert(type(tbl[1]) == "string", fmt('%s should be a string', vim.inspect(tbl[1])))
-    assert(type(tbl[2]) == "string", fmt('%s should be a string', vim.inspect(tbl[2])))
+    assert(type(tbl[1]) == "string", fmt("%s should be a string", vim.inspect(tbl[1])))
+    assert(type(tbl[2]) == "string", fmt("%s should be a string", vim.inspect(tbl[2])))
   else
-    msg = {{fmt("Invalid message passed in %s", msg), "ErrorMsg"}}
+    msg = { { fmt("Invalid message passed in %s", msg), "ErrorMsg" } }
   end
   vim.api.nvim_echo(msg, true, {})
 end
@@ -69,19 +73,15 @@ local path_sep = vim.loop.os_uname().sysname == "Windows" and "\\" or "/"
 --- @param filepath string
 local function dirname(filepath)
   local is_changed = false
-  local result =
-    filepath:gsub(
-    path_sep .. "([^" .. path_sep .. "]+)$",
-    function()
-      is_changed = true
-      return ""
-    end
-  )
+  local result = filepath:gsub(path_sep .. "([^" .. path_sep .. "]+)$", function()
+    is_changed = true
+    return ""
+  end)
   return result, is_changed
 end
 
 function M.path_join(...)
-  return table.concat(vim.tbl_flatten {...}, path_sep)
+  return table.concat(vim.tbl_flatten({ ... }), path_sep)
 end
 
 --- @param buf_id number
@@ -114,7 +114,7 @@ function M.create_augroups(definitions)
     vim.cmd("augroup " .. group_name)
     vim.cmd("autocmd!")
     for _, def in ipairs(definition) do
-      local command = table.concat(vim.tbl_flatten {"autocmd", def}, " ")
+      local command = table.concat(vim.tbl_flatten({ "autocmd", def }), " ")
       vim.cmd(command)
     end
     vim.cmd("augroup END")
@@ -149,13 +149,9 @@ end
 ---@param buf_id number
 ---@param dependency_file string
 function M.find(buf_id, dependency_file)
-  local dir =
-    M.find_dependency_file(
-    buf_id,
-    function(dir)
-      return vim.fn.filereadable(M.path_join(dir, dependency_file)) == 1
-    end
-  )
+  local dir = M.find_dependency_file(buf_id, function(dir)
+    return vim.fn.filereadable(M.path_join(dir, dependency_file)) == 1
+  end)
   return M.path_join(dir, dependency_file)
 end
 
@@ -165,7 +161,7 @@ end
 ---@param buf_num number|nil
 function M.replace_line(replacement, lnum, buf_num)
   buf_num = buf_num or 0
-  api.nvim_buf_set_lines(0, lnum - 1, lnum, false, {replacement})
+  api.nvim_buf_set_lines(0, lnum - 1, lnum, false, { replacement })
 end
 
 return M

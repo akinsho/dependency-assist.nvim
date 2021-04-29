@@ -1,5 +1,5 @@
 local Api = {
-  base_uri = nil
+  base_uri = nil,
 }
 
 function Api:new(o)
@@ -24,7 +24,7 @@ function Api:get(path, cb)
       on_stdout = function(_, d, _)
         local json = vim.fn.json_decode(table.concat(d))
         cb(json)
-      end
+      end,
     }
   )
 end

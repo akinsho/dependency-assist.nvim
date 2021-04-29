@@ -1,4 +1,4 @@
-require "dependency_assist/utils/levenshtein_distance"
+require("dependency_assist/utils/levenshtein_distance")
 
 local M = {}
 

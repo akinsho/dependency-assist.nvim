@@ -1,20 +1,20 @@
-local api = require "dependency_assist/rust/crates_api"
-local formatter = require "dependency_assist/rust/formatter"
-local helpers = require "dependency_assist/utils/helpers"
-local TOML = require "dependency_assist/toml"
+local api = require("dependency_assist/rust/crates_api")
+local formatter = require("dependency_assist/rust/formatter")
+local helpers = require("dependency_assist/utils/helpers")
+local TOML = require("dependency_assist/toml")
 
 local extension = "rs"
 local dependency_file = "Cargo.toml"
 local dev_block = "[dev-dependencies]"
 local dependency_block = "[dependencies]"
-local filetypes = {"rust", "toml"}
+local filetypes = { "rust", "toml" }
 
 local rust = {
   api = api,
   extension = extension,
   filetypes = filetypes,
   formatter = formatter,
-  filename = dependency_file
+  filename = dependency_file,
 }
 
 function rust.find_dependency_file(buf_id)
@@ -26,10 +26,7 @@ end
 function rust.get_packages(packages, callback)
   local versions = {}
   for _, pkg in ipairs(packages) do
-    table.insert(
-      versions,
-      formatter.format_package_details(pkg.name, pkg.newest_version)
-    )
+    table.insert(versions, formatter.format_package_details(pkg.name, pkg.newest_version))
   end
   callback(versions)
 end
@@ -46,18 +43,15 @@ end
 --- @param callback function
 local function report_outdated_packages(dependencies, lines, callback)
   if dependencies and not vim.tbl_isempty(dependencies) then
-    api.check_outdated_packages(
-      dependencies,
-      function(pkg)
-        local version = pkg.crate.newest_version
-        local name = pkg.crate.name
-        for lnum, line in ipairs(lines) do
-          if line:match("^[%s]*" .. name .. "[%s]*=") then
-            callback(lnum - 1, version)
-          end
+    api.check_outdated_packages(dependencies, function(pkg)
+      local version = pkg.crate.newest_version
+      local name = pkg.crate.name
+      for lnum, line in ipairs(lines) do
+        if line:match("^[%s]*" .. name .. "[%s]*=") then
+          callback(lnum - 1, version)
         end
       end
-    )
+    end)
   end
 end
 
