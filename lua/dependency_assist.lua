@@ -295,7 +295,7 @@ function M.setup(preferences)
   for _, data in pairs(assistants) do
     table.insert(names, data.filename)
     table.insert(names, "*." .. data.extension)
-    table.insert(filetypes, data.filetype)
+    vim.list_extend(filetypes, data.filetypes)
   end
   local filenames = table.concat(names, ",")
 
@@ -308,13 +308,11 @@ function M.setup(preferences)
     end
   end
 
-  h.create_augroups(
-    {
-      dependency_assist_setup = {
-        {"BufEnter", filenames, "++once", [[lua _G.__dep_assistant_setup()]]}
-      }
-    }
-  )
+  h.create_augroups({
+    dependency_assist_setup = {
+      { "BufEnter", filenames, [[lua _G.__dep_assistant_setup()]] },
+    },
+  })
 end
 
 function M.upgrade_current_package()

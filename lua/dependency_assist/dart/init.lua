@@ -7,11 +7,11 @@ local extension = "dart"
 local dependency_file = "pubspec.yaml"
 local dev_block = "devDependencies:"
 local dependency_block = "dependencies:"
-local filetype = "dart"
+local filetypes = {"dart", "yaml"}
 
 local dart = {
   api = api,
-  filetype = filetype,
+  filetypes = filetypes,
   extension = extension,
   formatter = formatter,
   filename = dependency_file

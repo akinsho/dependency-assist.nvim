@@ -7,12 +7,12 @@ local extension = "rs"
 local dependency_file = "Cargo.toml"
 local dev_block = "[dev-dependencies]"
 local dependency_block = "[dependencies]"
-local filetype = "rust"
+local filetypes = {"rust", "toml"}
 
 local rust = {
   api = api,
   extension = extension,
-  filetype = filetype,
+  filetypes = filetypes,
   formatter = formatter,
   filename = dependency_file
 }
