@@ -1,7 +1,5 @@
-local api = require("dependency_assist/rust/crates_api")
-local formatter = require("dependency_assist/rust/formatter")
-local helpers = require("dependency_assist/utils/helpers")
-local TOML = require("dependency_assist/toml")
+local api = require("dependency_assist.rust.crates_api")
+local formatter = require("dependency_assist.rust.formatter")
 
 local extension = "rs"
 local dependency_file = "Cargo.toml"
@@ -18,6 +16,7 @@ local rust = {
 }
 
 function rust.find_dependency_file(buf_id)
+  local helpers = require("dependency_assist.utils.helpers")
   return helpers.find(buf_id, dependency_file)
 end
 
@@ -57,6 +56,7 @@ end
 
 function rust.show_versions(buf_id, callback)
   local lines = vim.api.nvim_buf_get_lines(buf_id, 0, -1, false)
+  local TOML = require("dependency_assist.toml")
   local output = TOML.parse(table.concat(lines, "\n"))
   local dependencies = output and output.dependencies or {}
   local dev_dependencies = output and output.dev_dependencies or {}
