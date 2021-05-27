@@ -139,7 +139,8 @@ function dart.process_search_results(results)
     local match
     local score
     for _, pkg in ipairs(result.packages) do
-      local distance = string.levenshtein(input, pkg.package)
+      local ld = require("dependency_assist.utils.levenshtein_distance")
+      local distance = ld.levenshtein(input, pkg.package)
       if score == nil or distance < score then
         score = distance
         match = pkg.package
