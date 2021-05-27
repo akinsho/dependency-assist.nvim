@@ -1,5 +1,4 @@
-local Api = require("dependency_assist/api")
-local helpers = require("dependency_assist/utils/helpers")
+local Api = require("dependency_assist.api")
 
 local M = {}
 
@@ -13,6 +12,7 @@ function M.search_package(name, cb)
     if data then
       cb(data)
     else
+      local helpers = require("dependency_assist/utils/helpers")
       helpers.echoerr(name .. "not found")
     end
   end)
@@ -35,6 +35,7 @@ function M.get_package(name, cb)
     if data then
       cb(data)
     else
+      local helpers = require("dependency_assist/utils/helpers")
       helpers.echoerr(name .. "not found")
     end
   end)

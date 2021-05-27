@@ -1,5 +1,3 @@
-local h = require("dependency_assist.utils.helpers")
-
 local M = {}
 local api = vim.api
 local VIRTUAL_TEXT_HIGHLIGHT = "DependencyAssistVirtualText"
@@ -8,6 +6,7 @@ local state = { is_dev = false }
 
 --- @param buf integer
 local function get_assistant(buf)
+  local h = require("dependency_assist.utils.helpers")
   local assistants = require("dependency_assist.assistants")
   local ft = vim.bo[buf].filetype
   local assistant = assistants[ft]
@@ -28,6 +27,7 @@ local function get_assistant(buf)
 end
 
 local function insert_packages(buf_id, packages)
+  local h = require("dependency_assist.utils.helpers")
   local assistant = get_assistant(buf_id)
   require("dependency_assist.ui").close()
   if not h.is_dependency_file(buf_id, assistant.filename) then
@@ -82,6 +82,7 @@ local function select_next_version(versions)
       return
     end
     local lnum = vim.fn.line(".")
+    local h = require("dependency_assist.utils.helpers")
     h.replace_line(replacement, lnum)
     indices[name] = index
   end
@@ -115,6 +116,7 @@ local function handle_search_results(buf)
       if #selected > 0 then
         return get_latest_versions(buf, selected)
       else
+        local h = require("dependency_assist.utils.helpers")
         h.echomsg("Sorry I couldn't find any matching search results")
       end
     end
@@ -140,7 +142,7 @@ local function search_packages(buf, lines)
     if #packages > 0 then
       assistant.api.search_multiple_packages(packages, handle_search_results(buf))
     else
-      h.echomsg('You must enter some packages separated by a ","')
+      require("dependency_assist.utils.helpers").echomsg('You must enter some packages separated by a ","')
     end
   end
 end
@@ -206,12 +208,13 @@ end
 --- @param preferences table
 local function setup_dependency_file(buf_id, preferences)
   if preferences and preferences.key then
-    api.nvim_buf_set_keymap(buf_id, "n", preferences.key, ":AddDependency<CR>", {
+    api.nvim_buf_set_keymap(buf_id, "n", preferences.key, "<Cmd>AddDependency<CR>", {
       noremap = true,
       silent = true,
     })
   end
 
+  local h = require("dependency_assist.utils.helpers")
   h.create_cmd("UpdateDependencyLine", "buffer", "upgrade_current_package")
 
   M.show_versions(buf_id)
@@ -250,6 +253,7 @@ local function setup_ft(preferences)
   end
 
   local assistant = get_assistant(buf_id)
+  local h = require("dependency_assist.utils.helpers")
   h.create_cmd("AddDependency", "buffer", "dependency_search")
   h.create_cmd("AddDevDependency", "buffer", "dev_dependency_search")
 
@@ -281,7 +285,7 @@ function M.setup(preferences)
     end
   end
 
-  h.create_augroups({
+  require("dependency_assist.utils.helpers").create_augroups({
     dependency_assist_setup = {
       { "BufEnter", filenames, [[lua _G.__dep_assistant_setup()]] },
     },
@@ -303,7 +307,7 @@ function M.upgrade_current_package()
         vim.fn.setline(lnum, new_line)
         M.show_versions(buf_id)
       else
-        h.echomsg("Unable to update package!")
+        require("dependency_assist.utils.helpers").echomsg("Unable to update package!")
       end
     end
   end
