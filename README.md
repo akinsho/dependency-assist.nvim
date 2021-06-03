@@ -6,8 +6,6 @@ and by [vim-crates](https://github.com/mhinz/vim-crates), a vim plugin for visua
 Dependency assist is a neovim plugin written in lua, which is designed to help you find out which dependencies
 are up to date and add new ones to your dependency file.
 
-status: _Alpha_
-
 <img src="./.github/dependency_assist.gif" alt="Dependency assist in action" height="400px">
 
 **Dependency versions using virtual text**
