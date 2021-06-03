@@ -1,7 +1,5 @@
-local yaml = require("dependency_assist/yaml")
-local api = require("dependency_assist/dart/pubspec_api")
-local formatter = require("dependency_assist/dart/formatter")
-local helpers = require("dependency_assist/utils/helpers")
+local api = require("dependency_assist.dart.pubspec_api")
+local formatter = require("dependency_assist.dart.formatter")
 
 local extension = "dart"
 local dependency_file = "pubspec.yaml"
@@ -11,9 +9,9 @@ local filetypes = { "dart", "yaml" }
 
 local dart = {
   api = api,
+  formatter = formatter,
   filetypes = filetypes,
   extension = extension,
-  formatter = formatter,
   filename = dependency_file,
 }
 
@@ -21,6 +19,7 @@ local dart = {
 --- @param version string
 --- @param line string
 local function is_matching_pkg(name, version, line)
+  local helpers = require("dependency_assist.utils.helpers")
   if helpers.any(helpers.is_empty, line, name, version) then
     return false
   end
@@ -35,7 +34,7 @@ end
 --- @param callback function
 local function report_outdated_packages(deps, lines, callback)
   if deps and not vim.tbl_isempty(deps) then
-    api.check_outdated_packages(deps, function(pkg)
+    dart.api.check_outdated_packages(deps, function(pkg)
       local lnum
       local is_string = type(pkg.previous) == "string"
       for idx, line in ipairs(lines) do
@@ -72,6 +71,7 @@ local function parse_pubspec(buf_id, should_truncate)
     if buffer_text == "" then
       return
     end
+    local yaml = require("dependency_assist.yaml")
     local success, parsed_lines = pcall(yaml.eval, buffer_text)
     if not success then
       return
@@ -118,6 +118,7 @@ function dart.insert_dependencies(dependencies, is_dev)
       lnum = idx - 1
     end
   end
+  local helpers = require("dependency_assist.utils.helpers")
   if lnum then
     helpers.insert_beneath(lnum, dependencies)
   else
@@ -128,6 +129,7 @@ end
 --- Find the path of the project's pubspec.yaml
 --- @param buf_id number
 function dart.find_dependency_file(buf_id)
+  local helpers = require("dependency_assist.utils.helpers")
   return helpers.find(buf_id, dependency_file)
 end
 
@@ -137,7 +139,8 @@ function dart.process_search_results(results)
     local match
     local score
     for _, pkg in ipairs(result.packages) do
-      local distance = string.levenshtein(input, pkg.package)
+      local ld = require("dependency_assist.utils.levenshtein_distance")
+      local distance = ld.levenshtein(input, pkg.package)
       if score == nil or distance < score then
         score = distance
         match = pkg.package
@@ -151,11 +154,11 @@ function dart.process_search_results(results)
 end
 
 function dart.get_packages(packages, callback)
-  api.get_packages(packages, function(data)
+  dart.api.get_packages(packages, function(data)
     local all_latest = {}
     local all_versions = {}
     for _, result in pairs(data) do
-      local versions, name = formatter.format_package_details(result)
+      local versions, name = dart.formatter.format_package_details(result)
       table.insert(all_latest, versions[1])
       all_versions[name] = versions
     end

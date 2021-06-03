@@ -1,5 +1,3 @@
-require("dependency_assist/utils/levenshtein_distance")
-
 local M = {}
 
 function M.format_packages(content)

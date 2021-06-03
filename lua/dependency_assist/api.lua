@@ -11,7 +11,7 @@ end
 
 --- @param path string
 --- @param cb function
---- @return number | 'the job id'
+--- @return number 'the job id'
 function Api:get(path, cb)
   return vim.fn.jobstart(
     string.format(

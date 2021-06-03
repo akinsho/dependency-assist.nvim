@@ -1,8 +1,11 @@
--- source: https://gist.github.com/Badgerati/3261142
+local M = {}
+
+--@source: https://gist.github.com/Badgerati/3261142
 -- Returns the Levenshtein distance between the two given strings
 --- @param str1 string
 --- @param str2 string
-function string.levenshtein(str1, str2)
+--- @returns integer
+function M.levenshtein(str1, str2)
   local len1 = string.len(str1)
   local len2 = string.len(str2)
   local matrix = {}
@@ -43,3 +46,5 @@ function string.levenshtein(str1, str2)
   -- return the last value - this is the Levenshtein distance
   return matrix[len1][len2]
 end
+
+return M
