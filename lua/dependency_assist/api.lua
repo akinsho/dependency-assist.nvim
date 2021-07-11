@@ -12,12 +12,17 @@ end
 --- @param path string
 --- @param cb function
 --- @return number 'the job id'
-function Api:get(path, cb)
+function Api:get(path, cb, provider_header)
+  if provider_header ~= nil then
+    header = provider_header
+  else
+    header = '"Content-Type: application/json"'
+  end
   return vim.fn.jobstart(
     string.format(
       'curl -X GET "%s" -H %s',
       self.base_uri .. path,
-      '"Content-Type: application/json"'
+      header
     ),
     {
       stdout_buffered = true,

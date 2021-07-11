@@ -15,7 +15,7 @@ function M.search_package(name, cb)
       local helpers = require("dependency_assist/utils/helpers")
       helpers.echoerr(name .. "not found")
     end
-  end)
+  end, '"User-Agent: my_bot (my_bot.com/info)"')
 end
 
 function M.search_multiple_packages(packages, cb)
@@ -38,7 +38,7 @@ function M.get_package(name, cb)
       local helpers = require("dependency_assist/utils/helpers")
       helpers.echoerr(name .. "not found")
     end
-  end)
+  end, '"User-Agent: my_bot (my_bot.com/info)"')
 end
 
 function M.get_packages(names, cb)
