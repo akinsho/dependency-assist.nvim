@@ -27,6 +27,14 @@ status: _Alpha_
 
 ## Installation
 
+### lua
+
+```lua
+use {'akinsho/dependency-assist.nvim', rocks = {'lyaml'}}
+```
+
+### vimscript
+
 ```
 Plug 'akinsho/dependency-assist.nvim'
 ```
@@ -35,7 +43,7 @@ Then in your `init.vim` somewhere after loading the plugin call
 
 ```vim
 lua << EOF
-  require'dependency_assist'.setup{}
+  require'dependency_assist'.setup {}
 EOF
 ```
 

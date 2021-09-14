@@ -52,32 +52,12 @@ end
 local function parse_pubspec(buf_id, should_truncate)
   should_truncate = should_truncate ~= nil and should_truncate or true
   local lines = vim.api.nvim_buf_get_lines(buf_id, 0, -1, false)
-  if #lines > 0 then
-    local buffer_text = ""
-    -- NOTE: filter out blank lines otherwise the parser fails
-    local dependency_section_seen = false
-    for _, line in ipairs(lines) do
-      -- Filter out all lines that don't relate to our dependencies
-      -- unless we have specified that we should not truncate the lines
-      if line:match(dependency_block) or line:match(dev_block) then
-        dependency_section_seen = true
-      end
-      if line ~= "" and (not should_truncate or dependency_section_seen) then
-        buffer_text = buffer_text .. "\n" .. line
-      end
-    end
-
-    -- parsing the buffer text should NOT throw an error just fail silently for now
-    if buffer_text == "" then
-      return
-    end
-    local yaml = require("dependency_assist.yaml")
-    local success, parsed_lines = pcall(yaml.eval, buffer_text)
-    if not success then
-      return
-    end
-    return parsed_lines, lines
+  if #lines < 1 then
+    return
   end
+  local lyaml = require("lyaml")
+  local parsed_lines = lyaml.load(table.concat(lines, "\n"))
+  return parsed_lines, lines
 end
 
 --- @param buf_id number
