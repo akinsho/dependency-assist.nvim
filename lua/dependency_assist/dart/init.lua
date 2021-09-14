@@ -1,10 +1,9 @@
 local api = require("dependency_assist.dart.pubspec_api")
 local formatter = require("dependency_assist.dart.formatter")
+local luv = vim.loop
 
 local extension = "dart"
 local dependency_file = "pubspec.yaml"
-local dev_block = "devDependencies:"
-local dependency_block = "dependencies:"
 local filetypes = { "dart", "yaml" }
 
 local dart = {
@@ -49,15 +48,31 @@ local function report_outdated_packages(deps, lines, callback)
   end
 end
 
-local function parse_pubspec(buf_id, should_truncate)
-  should_truncate = should_truncate ~= nil and should_truncate or true
+---@type table<string, table<string, table>>
+local cache = {}
+
+---Parse the pubspec.yaml file and return its as lua tables
+---@param buf_id number
+---@return table<string, any>
+---@return string[]
+local function parse_pubspec(buf_id)
   local lines = vim.api.nvim_buf_get_lines(buf_id, 0, -1, false)
   if #lines < 1 then
     return
   end
-  local lyaml = require("lyaml")
-  local parsed_lines = lyaml.load(table.concat(lines, "\n"))
-  return parsed_lines, lines
+  local data
+  local stat = luv.fs_stat(vim.api.nvim_buf_get_name(buf_id))
+  local store = cache[buf_id]
+  if store and store.mtime == stat.mtime.sec then
+    data = store.data
+  else
+    local lyaml = require("lyaml")
+    data = lyaml.load(table.concat(lines, "\n"))
+    if stat then
+      cache[buf_id] = { data = data, mtime = stat.mtime.sec }
+    end
+  end
+  return data, lines
 end
 
 --- @param buf_id number
@@ -74,7 +89,7 @@ end
 --- @param is_dev boolean
 function dart.insert_dependencies(dependencies, is_dev)
   local buf_id = vim.api.nvim_get_current_buf()
-  local parsed_lines, lines = parse_pubspec(buf_id, false)
+  local parsed_lines, lines = parse_pubspec(buf_id)
   local data = is_dev and parsed_lines.dev_dependencies or parsed_lines.dependencies
   local length = vim.tbl_count(data)
   local index = 1
